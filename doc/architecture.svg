@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="340" viewBox="0 0 1160 340" font-family="Menlo, monospace">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#38BDF8"/></marker></defs>
+  <rect width="1160" height="340" fill="#0B1220"/>
+  <text x="44" y="48" font-size="22" font-weight="bold" fill="#E2E8F0">How image_ffi works</text>
+  <rect x="44" y="88" width="280" height="150" rx="10" fill="#0E1A2E" stroke="#1E3A5F"/>
+  <text x="62" y="116" font-size="13" fill="#64748B">DART</text>
+  <text x="62" y="148" font-size="15" fill="#E2E8F0">decodeImage / resizePixels</text>
+  <text x="62" y="172" font-size="15" fill="#E2E8F0">encodeJpeg / thumbnailJpeg</text>
+  <text x="62" y="200" font-size="12.5" fill="#94A3B8">native bytes are copied into a</text>
+  <text x="62" y="218" font-size="12.5" fill="#94A3B8">Uint8List and freed right away</text>
+
+  <rect x="380" y="88" width="150" height="150" rx="10" fill="#0E1A2E" stroke="#1E3A5F" stroke-dasharray="5 4"/>
+  <text x="398" y="116" font-size="13" fill="#64748B">dart:ffi</text>
+  <text x="455" y="170" font-size="14" fill="#E2E8F0" text-anchor="middle" transform="rotate(-90 455 170)">C ABI shim</text>
+
+  <rect x="586" y="88" width="300" height="150" rx="10" fill="#0E1A2E" stroke="#38BDF8"/>
+  <text x="604" y="116" font-size="13" fill="#64748B">NATIVE (build hooks)</text>
+  <text x="604" y="148" font-size="15" fill="#E2E8F0">stb, vendored + compiled</text>
+  <text x="604" y="174" font-size="13" fill="#94A3B8">stb_image (decode), stb_image_resize2</text>
+  <text x="604" y="192" font-size="13" fill="#94A3B8">(sRGB resize), stb_image_write (encode)</text>
+  <text x="604" y="216" font-size="12.5" fill="#64748B">public domain, no external deps</text>
+
+  <rect x="942" y="88" width="174" height="150" rx="10" fill="#111C2E" stroke="#1E3A5F"/>
+  <text x="960" y="116" font-size="13" fill="#64748B">OUTPUT</text>
+  <text x="960" y="150" font-size="15" fill="#E2E8F0">pixels or an</text>
+  <text x="960" y="172" font-size="15" fill="#E2E8F0">encoded image</text>
+  <text x="960" y="200" font-size="12.5" fill="#94A3B8">PNG / JPEG bytes</text>
+
+  <path d="M324 148 L380 148" stroke="#38BDF8" stroke-width="2" marker-end="url(#a)"/>
+  <path d="M530 148 L586 148" stroke="#38BDF8" stroke-width="2" marker-end="url(#a)"/>
+  <path d="M886 148 L942 148" stroke="#38BDF8" stroke-width="2" marker-end="url(#a)"/>
+  <text x="44" y="290" font-size="13" fill="#64748B">Formats: decodes PNG, JPEG, BMP, GIF, PSD, TGA, HDR, PIC; encodes JPEG and PNG.</text>
+</svg>

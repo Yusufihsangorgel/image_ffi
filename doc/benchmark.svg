@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420" viewBox="0 0 1100 420" font-family="Menlo, monospace">
+  <rect width="1100" height="420" fill="#0B1220"/>
+  <text x="48" y="50" font-size="23" font-weight="bold" fill="#E2E8F0">Decode / resize / encode a 2000x2000 image</text>
+  <text x="48" y="77" font-size="14" fill="#94A3B8">Measured median ms, Apple Silicon, Dart 3.11. Lower is better. Resize compared at matched (cubic) quality.</text>
+  <g font-size="13.5">
+    <text x="60" y="120" fill="#E2E8F0">decode PNG</text>
+    <rect x="300" y="106" width="99" height="22" fill="#38BDF8"/><text x="409" y="123" fill="#38BDF8">image_ffi 21.9</text>
+    <rect x="300" y="134" width="427" height="22" fill="#334155"/><text x="737" y="151" fill="#94A3B8">image 94.5  (4.3x)</text>
+
+    <text x="60" y="210" fill="#E2E8F0">resize to 256px (cubic)</text>
+    <rect x="300" y="196" width="22" height="22" fill="#38BDF8"/><text x="332" y="213" fill="#38BDF8">image_ffi 4.8</text>
+    <rect x="300" y="224" width="199" height="22" fill="#334155"/><text x="509" y="241" fill="#94A3B8">image 44.0  (9.3x)</text>
+
+    <text x="60" y="300" fill="#E2E8F0">decode + resize + JPEG</text>
+    <rect x="300" y="286" width="123" height="22" fill="#38BDF8"/><text x="433" y="303" fill="#38BDF8">image_ffi 27.3</text>
+    <rect x="300" y="314" width="640" height="22" fill="#334155"/><text x="950" y="331" fill="#94A3B8">image 141.7</text>
+    <text x="300" y="352" font-size="14" fill="#38BDF8">the full thumbnail pipeline: 5.2x faster</text>
+  </g>
+  <text x="48" y="398" font-size="12.5" fill="#64748B">Verified: image_ffi output decoded byte-identical (PNG) and within tolerance (JPEG) by an independent reader.</text>
+</svg>

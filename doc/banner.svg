@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400">
+  <defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1.5" fill="#E2E8F0" fill-opacity="0.05"/></pattern></defs>
+  <rect width="1200" height="400" fill="#0B1220"/><rect width="1200" height="400" fill="url(#dots)"/>
+  <rect x="66" y="196" width="44" height="6" fill="#38BDF8"/>
+  <text x="64" y="284" font-family="Menlo, monospace" font-size="60" font-weight="bold" fill="#E2E8F0">image_ffi</text>
+  <text x="66" y="328" font-family="Menlo, monospace" font-size="23" fill="#94A3B8">Native image decode, resize and encode for Dart</text>
+  <!-- motif: large image downscaling to a thumbnail -->
+  <g fill="none" stroke-width="3">
+    <rect x="852" y="120" width="150" height="150" rx="8" stroke="#1E3A5F"/>
+    <path d="M 872 240 L 912 195 L 940 220 L 972 178 L 1002 214" stroke="#1E3A5F"/>
+    <circle cx="900" cy="158" r="12" stroke="#1E3A5F"/>
+    <path d="M 1016 195 l 26 0 m 0 0 l -8 -8 m 8 8 l -8 8" stroke="#38BDF8"/>
+    <rect x="1054" y="158" width="74" height="74" rx="6" stroke="#38BDF8"/>
+    <path d="M 1064 232 L 1082 210 L 1096 222 L 1112 200 L 1128 218" stroke="#38BDF8"/>
+    <circle cx="1078" cy="180" r="7" stroke="#38BDF8"/>
+  </g>
+</svg>
