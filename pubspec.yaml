@@ -1,8 +1,9 @@
 name: image_ffi
 description: >-
-  Native image decode, resize and encode for Dart via Sean Barrett's stb over
-  FFI. Fast thumbnails and JPEG/PNG output, compiled from source by build hooks.
-version: 0.2.0
+  Fast native image resize, thumbnail and JPEG/PNG encode for Dart over FFI.
+  Several times quicker than the pure-Dart image package; stb-backed, no
+  prebuilt binary.
+version: 0.2.1
 repository: https://github.com/Yusufihsangorgel/image_ffi
 
 topics:

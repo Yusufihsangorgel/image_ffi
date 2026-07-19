@@ -1,3 +1,7 @@
+## 0.2.1
+
+- Docs: sharpen the pub.dev description to lead with the value and the terms people search.
+
 ## 0.2.0
 
 - `resizePixels` now takes a `colorSpace` (`ResizeColorSpace.srgb` by default,
