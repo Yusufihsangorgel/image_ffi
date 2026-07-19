@@ -409,6 +409,48 @@ Uint8List thumbnailJpeg(
   );
 }
 
+/// Decodes [imageBytes], scales it so its longer side is at most [maxDimension],
+/// and re-encodes it as PNG.
+///
+/// Unlike [thumbnailJpeg], this keeps an alpha channel, so it is the one to reach
+/// for on logos, icons, screenshots, and anything with transparency, where a
+/// JPEG would flatten the transparent areas onto an opaque background. PNG is
+/// lossless, so there is no quality knob.
+Uint8List thumbnailPng(Uint8List imageBytes, {int maxDimension = 256}) {
+  _checkPositive(maxDimension, 'maxDimension');
+
+  final image = decodeImage(imageBytes);
+  final longerSide = math.max(image.width, image.height);
+
+  int dstWidth;
+  int dstHeight;
+  Uint8List pixels;
+  if (longerSide <= maxDimension) {
+    dstWidth = image.width;
+    dstHeight = image.height;
+    pixels = image.pixels;
+  } else {
+    final scale = maxDimension / longerSide;
+    dstWidth = math.max(1, (image.width * scale).round());
+    dstHeight = math.max(1, (image.height * scale).round());
+    pixels = resizePixels(
+      image.pixels,
+      srcWidth: image.width,
+      srcHeight: image.height,
+      dstWidth: dstWidth,
+      dstHeight: dstHeight,
+      channels: image.channels,
+    );
+  }
+
+  return encodePng(
+    pixels,
+    width: dstWidth,
+    height: dstHeight,
+    channels: image.channels,
+  );
+}
+
 void _checkPositive(int value, String name) {
   if (value <= 0) {
     throw ArgumentError.value(value, name, 'must be positive');

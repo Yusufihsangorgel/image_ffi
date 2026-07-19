@@ -1,3 +1,10 @@
+## 0.3.0
+
+- Add `thumbnailPng`, a one-call decode, resize, and PNG encode that keeps the
+  alpha channel. Reach for it on logos, icons, screenshots, and anything with
+  transparency, where `thumbnailJpeg` would flatten the transparent areas onto a
+  background.
+
 ## 0.2.1
 
 - Docs: sharpen the pub.dev description to lead with the value and the terms people search.

@@ -31,4 +31,5 @@ export 'src/image_ffi_base.dart'
         encodePng,
         imageInfo,
         resizePixels,
-        thumbnailJpeg;
+        thumbnailJpeg,
+        thumbnailPng;
