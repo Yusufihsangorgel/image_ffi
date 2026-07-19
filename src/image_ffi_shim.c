@@ -73,19 +73,45 @@ IMGFFI_EXPORT int imgffi_info(const unsigned char* data, int len, int* out_w,
 // High-quality sRGB-correct resize. channels is the pixel layout (1..4); a
 // value of 4 is treated as non-premultiplied RGBA so alpha is handled
 // correctly. Returns a freshly allocated dst_w * dst_h * channels buffer, or
-// NULL on failure. Free the result with imgffi_free_buffer().
+// Maps a plain channel count to the stb pixel layout that handles alpha
+// correctly. A raw `(stbir_pixel_layout)channels` cast is wrong for 2-channel
+// input: value 2 is STBIR_2CHANNEL (two colour channels, no alpha), but a
+// 2-channel image is grayscale + alpha, so it must be STBIR_RA for edges
+// against transparency to stay clean. 1/3/4 already line up (1CHANNEL / RGB /
+// RGBA), but map them explicitly so the intent is on the page.
+static stbir_pixel_layout imgffi_layout(int channels) {
+  switch (channels) {
+    case 1:
+      return STBIR_1CHANNEL;
+    case 2:
+      return STBIR_RA;  // gray + alpha, not two colour channels
+    case 3:
+      return STBIR_RGB;
+    default:
+      return STBIR_RGBA;  // non-premultiplied alpha
+  }
+}
+
+// NULL on failure. Free the result with imgffi_free_buffer(). `linear` selects
+// the colour space the resample runs in: 0 treats the colour channels as sRGB
+// (the right default for photographic/UI images), 1 treats them as linear
+// (for masks, data, or already-linear pixels, where an sRGB curve would
+// distort the values). Alpha is always resampled linearly in both.
 IMGFFI_EXPORT unsigned char* imgffi_resize(const unsigned char* input,
                                            int src_w, int src_h, int dst_w,
-                                           int dst_h, int channels) {
+                                           int dst_h, int channels, int linear) {
   const size_t output_size =
       (size_t)dst_w * (size_t)dst_h * (size_t)channels;
   unsigned char* output = (unsigned char*)malloc(output_size);
   if (output == NULL) {
     return NULL;
   }
+  const stbir_pixel_layout layout = imgffi_layout(channels);
   unsigned char* result =
-      stbir_resize_uint8_srgb(input, src_w, src_h, 0, output, dst_w, dst_h, 0,
-                              (stbir_pixel_layout)channels);
+      linear ? stbir_resize_uint8_linear(input, src_w, src_h, 0, output, dst_w,
+                                         dst_h, 0, layout)
+             : stbir_resize_uint8_srgb(input, src_w, src_h, 0, output, dst_w,
+                                       dst_h, 0, layout);
   if (result == NULL) {
     free(output);
     return NULL;

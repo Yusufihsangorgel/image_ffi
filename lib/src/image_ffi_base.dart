@@ -184,15 +184,32 @@ DecodedImage decodeImage(Uint8List bytes, {int? forceChannels}) {
   }
 }
 
-/// Resizes raw pixels to new dimensions with a high-quality, sRGB-correct
-/// filter.
+/// The colour space a resize resamples in.
+enum ResizeColorSpace {
+  /// Treat the colour channels as sRGB, converting to linear light for the
+  /// resample and back. The right default for photographic and UI images.
+  srgb,
+
+  /// Treat the colour channels as already linear. Use this for masks, data
+  /// images, or pixels you keep in linear space, where applying an sRGB curve
+  /// would distort the values.
+  linear,
+}
+
+/// Resizes raw pixels to new dimensions with a high-quality filter.
 ///
 /// The input is [srcWidth] by [srcHeight] with [channels] bytes per pixel,
 /// row-major and unpadded, so `pixels.length` must equal
 /// `srcWidth * srcHeight * channels`. The output is the same layout at
-/// [dstWidth] by [dstHeight]. Resampling happens in linear light and, for
-/// four-channel input, treats the alpha channel as non-premultiplied, so edges
-/// against transparency stay clean.
+/// [dstWidth] by [dstHeight].
+///
+/// [colorSpace] selects how the colour channels are treated: [ResizeColorSpace.srgb]
+/// (the default) resamples in linear light, correct for photographic and UI
+/// images; [ResizeColorSpace.linear] treats the pixels as already linear, for
+/// masks or data where an sRGB curve would be wrong. Alpha is always resampled
+/// linearly. The channel count picks the right layout, so 2-channel input is
+/// treated as grayscale + alpha (not two colour channels) and 4-channel as
+/// non-premultiplied RGBA, keeping edges against transparency clean.
 ///
 /// This operates on already-decoded pixels; use [thumbnailJpeg] for the common
 /// decode-then-downscale-then-encode path.
@@ -207,6 +224,7 @@ Uint8List resizePixels(
   required int dstWidth,
   required int dstHeight,
   int channels = 4,
+  ResizeColorSpace colorSpace = ResizeColorSpace.srgb,
 }) {
   _checkPositive(srcWidth, 'srcWidth');
   _checkPositive(srcHeight, 'srcHeight');
@@ -231,6 +249,7 @@ Uint8List resizePixels(
       dstWidth,
       dstHeight,
       channels,
+      colorSpace == ResizeColorSpace.linear ? 1 : 0,
     );
     if (outPtr == nullptr) {
       throw ImageFfiException('resize failed');

@@ -1,3 +1,13 @@
+## 0.2.0
+
+- `resizePixels` now takes a `colorSpace` (`ResizeColorSpace.srgb` by default,
+  or `.linear`). sRGB is right for photographic and UI images; linear is for
+  masks and data pixels where an sRGB curve would distort the values.
+- Fix: 2-channel input is now resampled as grayscale + alpha (STBIR_RA) instead
+  of two colour channels, so edges against transparency stay clean for gray+alpha
+  images. Previously a 2-channel resize let transparent pixels bleed into the
+  colour.
+
 ## 0.1.0
 
 - Initial release.

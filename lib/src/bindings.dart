@@ -50,10 +50,10 @@ external int imgffiInfo(
   Pointer<Int> outChannels,
 );
 
-/// High-quality sRGB-correct resize. Returns a heap buffer of
-/// `dstWidth * dstHeight * channels` bytes, or [nullptr] on failure. Free the
-/// result with [imgffiFreeBuffer].
-@Native<Pointer<Uint8> Function(Pointer<Uint8>, Int, Int, Int, Int, Int)>(
+/// High-quality resize. `linear` is 0 for an sRGB-correct resample and 1 for a
+/// linear one. Returns a heap buffer of `dstWidth * dstHeight * channels`
+/// bytes, or [nullptr] on failure. Free the result with [imgffiFreeBuffer].
+@Native<Pointer<Uint8> Function(Pointer<Uint8>, Int, Int, Int, Int, Int, Int)>(
   symbol: 'imgffi_resize',
 )
 external Pointer<Uint8> imgffiResize(
@@ -63,6 +63,7 @@ external Pointer<Uint8> imgffiResize(
   int dstWidth,
   int dstHeight,
   int channels,
+  int linear,
 );
 
 /// Encodes pixels as a PNG into memory. Returns a heap buffer of `*outLen`

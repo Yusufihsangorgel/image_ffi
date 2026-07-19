@@ -96,7 +96,11 @@ with `dart run bench/bench.dart`.
 - `decodeImage(bytes, {forceChannels})` returns a `DecodedImage` with `width`,
   `height`, `channels` and row-major `pixels`.
 - `imageInfo(bytes)` returns `(width, height, channels)` from the header only.
-- `resizePixels(pixels, {srcWidth, srcHeight, dstWidth, dstHeight, channels})`.
+- `resizePixels(pixels, {srcWidth, srcHeight, dstWidth, dstHeight, channels,
+  colorSpace})`. `colorSpace` is `ResizeColorSpace.srgb` by default (right for
+  photographic and UI images) or `.linear` for masks and data pixels. Two-channel
+  input is resampled as grayscale + alpha, four-channel as non-premultiplied
+  RGBA, so edges against transparency stay clean.
 - `encodeJpeg(pixels, {width, height, channels, quality})` and
   `encodePng(pixels, {width, height, channels})`.
 - `thumbnailJpeg(bytes, {maxDimension, quality})` decodes, downscales so the

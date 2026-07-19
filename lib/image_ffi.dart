@@ -25,6 +25,7 @@ export 'src/image_ffi_base.dart'
     show
         DecodedImage,
         ImageFfiException,
+        ResizeColorSpace,
         decodeImage,
         encodeJpeg,
         encodePng,
