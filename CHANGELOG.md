@@ -1,3 +1,11 @@
+## 0.4.4
+
+- Install instructions now say `pub add` instead of pinning a version. The
+  pinned number was stale by several releases and would have been stale again
+  after the next one: the README ships frozen in the archive, so a hand-edited
+  version line is wrong the moment anything is published. This one cannot go
+  out of date.
+
 ## 0.4.3
 
 - Widen the native-toolchain constraints so the package can be installed in a

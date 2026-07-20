@@ -21,9 +21,8 @@ For cropping, drawing, filters, format conversions and animation, use `image`.
 
 ## Install
 
-```yaml
-dependencies:
-  image_ffi: ^0.1.0
+```sh
+dart pub add image_ffi
 ```
 
 Building the native library needs a C toolchain and Dart's native build hooks
