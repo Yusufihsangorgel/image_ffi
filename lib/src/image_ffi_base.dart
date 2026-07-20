@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -473,3 +474,40 @@ void _checkPixelLength(Uint8List pixels, int width, int height, int channels) {
     );
   }
 }
+
+/// The off-main-isolate version of [thumbnailJpeg].
+///
+/// It runs the decode, resize and encode on a background isolate with
+/// [Isolate.run], so turning a large photo into a thumbnail doesn't block the
+/// calling isolate. In a Flutter app that keeps the UI responsive while a
+/// picked image is processed: neither the pure-Dart `image` package nor a plain
+/// synchronous FFI call can do that on the main isolate.
+///
+/// [imageBytes] is copied to the worker isolate and the JPEG is copied back;
+/// for a handful of images that copy is small next to the decode itself. See
+/// [thumbnailJpeg] for the parameters; an [ImageFfiException] raised in the
+/// worker surfaces from the returned future.
+Future<Uint8List> thumbnailJpegAsync(
+  Uint8List imageBytes, {
+  int maxDimension = 256,
+  int quality = 85,
+}) =>
+    Isolate.run(
+      () => thumbnailJpeg(
+        imageBytes,
+        maxDimension: maxDimension,
+        quality: quality,
+      ),
+    );
+
+/// The off-main-isolate version of [thumbnailPng]; see [thumbnailJpegAsync] for
+/// how the work is offloaded and [thumbnailPng] for the parameters. Use this
+/// when the source has transparency to preserve, since PNG keeps the alpha
+/// channel a JPEG thumbnail would drop.
+Future<Uint8List> thumbnailPngAsync(
+  Uint8List imageBytes, {
+  int maxDimension = 256,
+}) =>
+    Isolate.run(
+      () => thumbnailPng(imageBytes, maxDimension: maxDimension),
+    );

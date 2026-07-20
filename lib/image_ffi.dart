@@ -32,4 +32,6 @@ export 'src/image_ffi_base.dart'
         imageInfo,
         resizePixels,
         thumbnailJpeg,
-        thumbnailPng;
+        thumbnailJpegAsync,
+        thumbnailPng,
+        thumbnailPngAsync;

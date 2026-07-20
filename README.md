@@ -105,6 +105,27 @@ with `dart run bench/bench.dart`.
   `encodePng(pixels, {width, height, channels})`.
 - `thumbnailJpeg(bytes, {maxDimension, quality})` decodes, downscales so the
   longer side is at most `maxDimension` (never enlarging), and JPEG-encodes.
+  `thumbnailPng(bytes, {maxDimension})` does the same but PNG-encodes, keeping
+  the alpha channel a JPEG would drop.
+- `thumbnailJpegAsync` and `thumbnailPngAsync` take the same arguments and
+  return a `Future`; see below.
+
+## Off the main isolate
+
+`thumbnailJpegAsync` and `thumbnailPngAsync` run the whole decode, resize and
+encode on a background isolate with `Isolate.run`, so a large image doesn't
+block the isolate that called them:
+
+```dart
+final thumb = await thumbnailJpegAsync(bytes, maxDimension: 256);
+```
+
+This is the reason to reach for a native writer in a Flutter app: the pure-Dart
+`image` package runs on the calling isolate and janks the UI while a big photo
+is processed, and a plain synchronous FFI call does the same. The async variants
+keep the UI isolate free. The input bytes are copied to the worker and the
+result copied back; for a handful of images that copy is small next to the
+decode. An `ImageFfiException` raised in the worker surfaces from the future.
 
 ## How it works
 
@@ -114,9 +135,10 @@ with `dart run bench/bench.dart`.
 
 The native library is compiled from the vendored stb sources by
 `hook/build.dart` using Dart's native build hooks. It works anywhere Dart runs a
-C compiler for the target: Linux, macOS and Windows on the Dart CLI and server.
-Requires Dart 3.9 or later. Flutter support follows once native build hooks are
-stable for Flutter builds.
+C compiler for the target: Linux, macOS and Windows on the Dart CLI and server,
+and in Flutter apps whose build has native assets enabled, where the same hook
+runs and the async variants keep image work off the UI isolate. Requires Dart
+3.9 or later.
 
 The CI matrix builds and tests on Ubuntu, macOS and Windows.
 

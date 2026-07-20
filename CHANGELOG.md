@@ -1,3 +1,13 @@
+## 0.4.0
+
+- Add `thumbnailJpegAsync` and `thumbnailPngAsync`. They take the same
+  arguments as the synchronous versions and return a `Future`, running the whole
+  decode, resize and encode on a background isolate with `Isolate.run` so a
+  large image doesn't block the calling isolate. In a Flutter app this keeps the
+  UI responsive while a picked photo is turned into a thumbnail, which neither
+  the pure-Dart `image` package nor a synchronous FFI call can do on the main
+  isolate. An `ImageFfiException` raised in the worker surfaces from the future.
+
 ## 0.3.0
 
 - Add `thumbnailPng`, a one-call decode, resize, and PNG encode that keeps the
