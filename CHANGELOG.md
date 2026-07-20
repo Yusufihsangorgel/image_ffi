@@ -1,3 +1,15 @@
+## 0.4.2
+
+- `example/no_jank.dart` measures what the async variants are for. It builds a
+  4000x3000 JPEG so no file is needed, makes eight thumbnails on the main
+  isolate and eight with `thumbnailJpegAsync`, and runs a 16 ms timer alongside
+  to report the longest gap between two ticks. On this machine: 413 ms of
+  silence, about 25 frames, against 18 ms and one. The work takes the same time
+  either way, which is the point; what moves is where it happens.
+- `example/README.md` says which call to reach for and why the thumbnail
+  functions exist at all, given the three-step version crosses the FFI boundary
+  three times and holds the full-size pixel buffer in Dart in between.
+
 ## 0.4.1
 
 - Declare the benchmark chart in `pubspec.yaml` so pub.dev renders it on the
