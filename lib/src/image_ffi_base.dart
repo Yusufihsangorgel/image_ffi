@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:ffi';
+import 'dart:io' show Platform;
 import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -510,4 +513,121 @@ Future<Uint8List> thumbnailPngAsync(
 }) =>
     Isolate.run(
       () => thumbnailPng(imageBytes, maxDimension: maxDimension),
+    );
+
+/// A counting semaphore that caps how many holders run at once.
+///
+/// [acquire] hands out a permit immediately while any are free, and otherwise
+/// returns a future that completes when [release] frees one. Waiters are served
+/// in the order they queued.
+class _Semaphore {
+  _Semaphore(this._permits);
+
+  int _permits;
+  final Queue<Completer<void>> _waiters = Queue<Completer<void>>();
+
+  Future<void> acquire() {
+    if (_permits > 0) {
+      _permits--;
+      return Future<void>.value();
+    }
+    final completer = Completer<void>();
+    _waiters.add(completer);
+    return completer.future;
+  }
+
+  void release() {
+    if (_waiters.isEmpty) {
+      _permits++;
+    } else {
+      _waiters.removeFirst().complete();
+    }
+  }
+}
+
+/// Maps [items] through [work] with at most [concurrency] calls in flight at a
+/// time, emitting each result as it finishes.
+///
+/// A semaphore gates every call, so no more than [concurrency] of them run at
+/// once no matter how many [items] there are. Results arrive in completion
+/// order, not the order of [items]. An error from any call surfaces as an error
+/// event on the returned stream and the rest keep running.
+///
+/// This is the concurrency engine behind [thumbnailJpegBatch] and
+/// [thumbnailPngBatch]. It is not part of the package's public API; it is left
+/// unnamed-private only so the concurrency bound can be tested directly.
+Stream<R> mapBounded<T, R>(
+  Iterable<T> items,
+  int concurrency,
+  Future<R> Function(T) work,
+) {
+  _checkPositive(concurrency, 'concurrency');
+  final semaphore = _Semaphore(concurrency);
+
+  Future<R> guarded(T item) async {
+    await semaphore.acquire();
+    try {
+      return await work(item);
+    } finally {
+      semaphore.release();
+    }
+  }
+
+  return Stream<R>.fromFutures([for (final item in items) guarded(item)]);
+}
+
+/// Thumbnails a batch of images off the main isolate with a bounded number of
+/// isolates running at once.
+///
+/// Calling [thumbnailJpegAsync] on every image of a folder at once spawns one
+/// isolate per image, and each one holds a full decoded buffer, so a real
+/// folder can exhaust memory. This runs the same per-image work but caps how
+/// many isolates are live to [concurrency], which defaults to
+/// `Platform.numberOfProcessors`. It is the call to reach for over a whole
+/// directory.
+///
+/// The results are emitted as each thumbnail finishes, so they arrive in
+/// completion order rather than the order of [images]; pair a result with its
+/// source before calling if you need the correspondence. [maxDimension] and
+/// [quality] are passed to [thumbnailJpeg] unchanged. A failure on one image
+/// surfaces as an error event on the stream while the rest keep going.
+///
+/// ```dart
+/// await for (final thumb in thumbnailJpegBatch(images, concurrency: 4)) {
+///   // write thumb
+/// }
+/// ```
+///
+/// Throws an [ArgumentError] if [concurrency] is not positive.
+Stream<Uint8List> thumbnailJpegBatch(
+  Iterable<Uint8List> images, {
+  int maxDimension = 256,
+  int quality = 85,
+  int? concurrency,
+}) =>
+    mapBounded(
+      images,
+      concurrency ?? Platform.numberOfProcessors,
+      (bytes) => thumbnailJpegAsync(
+        bytes,
+        maxDimension: maxDimension,
+        quality: quality,
+      ),
+    );
+
+/// The PNG twin of [thumbnailJpegBatch]; see it for how concurrency is bounded
+/// and how results are ordered, and [thumbnailPng] for the parameters. Use this
+/// over a folder whose images have transparency to keep, since PNG keeps the
+/// alpha channel a JPEG thumbnail would drop.
+///
+/// Throws an [ArgumentError] if [concurrency] is not positive.
+Stream<Uint8List> thumbnailPngBatch(
+  Iterable<Uint8List> images, {
+  int maxDimension = 256,
+  int? concurrency,
+}) =>
+    mapBounded(
+      images,
+      concurrency ?? Platform.numberOfProcessors,
+      (bytes) => thumbnailPngAsync(bytes, maxDimension: maxDimension),
     );

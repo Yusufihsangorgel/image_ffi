@@ -108,6 +108,10 @@ with `dart run bench/bench.dart`.
   the alpha channel a JPEG would drop.
 - `thumbnailJpegAsync` and `thumbnailPngAsync` take the same arguments and
   return a `Future`; see below.
+- `thumbnailJpegBatch(images, {maxDimension, quality, concurrency})` and
+  `thumbnailPngBatch(images, {maxDimension, concurrency})` thumbnail a whole
+  folder off the main isolate while capping how many isolates run at once; see
+  below.
 
 ## Off the main isolate
 
@@ -125,6 +129,32 @@ is processed, and a plain synchronous FFI call does the same. The async variants
 keep the UI isolate free. The input bytes are copied to the worker and the
 result copied back; for a handful of images that copy is small next to the
 decode. An `ImageFfiException` raised in the worker surfaces from the future.
+
+## A folder of images
+
+Over a whole directory, do not reach for `Future.wait` on the async variants:
+
+```dart
+// Don't. This spawns one isolate per image at once, each holding a full
+// decoded buffer, so a real folder can run the process out of memory.
+final thumbs = await Future.wait(images.map(thumbnailJpegAsync));
+```
+
+Use `thumbnailJpegBatch` (or `thumbnailPngBatch`) instead. It runs the same
+per-image work off the main isolate but caps how many isolates are live at
+once, to `concurrency`, which defaults to `Platform.numberOfProcessors`:
+
+```dart
+await for (final thumb in thumbnailJpegBatch(images, concurrency: 4)) {
+  // write thumb
+}
+```
+
+`maxDimension` and `quality` mean what they do on `thumbnailJpeg`. Each
+thumbnail is emitted as it finishes, so results arrive in completion order, not
+the order of `images`; pair a result with its source before the call if you
+need the correspondence. A failure on one image surfaces as an error on the
+stream while the rest keep going.
 
 ## How it works
 

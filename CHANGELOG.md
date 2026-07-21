@@ -1,3 +1,16 @@
+## 0.5.0
+
+- Add `thumbnailJpegBatch` and `thumbnailPngBatch` for processing a folder.
+  Running `Future.wait` over `thumbnailJpegAsync` spawned one isolate per image
+  at once, each holding a full decoded buffer, which ran a real directory out of
+  memory. The batch calls run the same per-image work off the main isolate but
+  cap how many isolates are live at once to `concurrency`, defaulting to
+  `Platform.numberOfProcessors`, using a semaphore over the existing async
+  calls. Each thumbnail is emitted from the returned stream as it finishes, so
+  results arrive in completion order rather than input order. `maxDimension` and
+  `quality` match the async variants. The README now points at these for a
+  folder and `example/no_jank.dart` shows the batch path.
+
 ## 0.4.4
 
 - Install instructions now say `pub add` instead of pinning a version. The

@@ -78,6 +78,19 @@ Future<void> main() async {
     }
   });
 
+  // A whole folder at once. Awaiting eight `thumbnailJpegAsync` calls with
+  // `Future.wait` would spawn eight isolates together, each holding a full
+  // decoded buffer; over a real directory that is how you run out of memory.
+  // `thumbnailJpegBatch` runs the same work but caps how many isolates are
+  // live at once, here to two, and hands back each thumbnail as it lands.
+  final folder = List.filled(8, photo);
+  final batched = await _underAFrameClock(() async {
+    await for (final _ in thumbnailJpegBatch(folder,
+        maxDimension: 256, concurrency: 2)) {
+      // Write or collect the thumbnail here.
+    }
+  });
+
   void report(String label, ({int worst, int elapsed}) run) {
     print(label);
     final frames = run.worst ~/ 16;
@@ -87,9 +100,13 @@ Future<void> main() async {
 
   report('8 thumbnails, on the main isolate', blocking);
   report('8 thumbnails, with thumbnailJpegAsync', offloaded);
+  report('8 thumbnails, with thumbnailJpegBatch (concurrency 2)', batched);
 
-  print('\nThe second run is not faster, and is not meant to be: the work is '
-      'the same\nwork. What changes is where it happens. Off the main isolate '
-      'the frame clock\nkeeps its cadence, which in an app is the difference '
-      'between a list that\nscrolls and one that stutters.');
+  print('\nThe offloaded runs are not faster, and are not meant to be: the '
+      'work is the\nsame work. What changes is where it happens. Off the main '
+      'isolate the frame\nclock keeps its cadence, which in an app is the '
+      'difference between a list that\nscrolls and one that stutters. '
+      '`thumbnailJpegBatch` adds the missing piece for\na folder: it stays off '
+      'the main isolate and it bounds how many isolates run at\nonce, so a '
+      'directory of photos does not spawn one full decode per file together.');
 }
