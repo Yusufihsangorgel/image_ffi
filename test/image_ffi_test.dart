@@ -267,6 +267,72 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('throws ArgumentError when dstWidth exceeds the native Int32 range '
+        'instead of silently truncating at the FFI boundary', () {
+      final pixels = buildRgba(4, 4);
+      // 2^32 + 100: an Int32 parameter marshals this down to 100, which
+      // used to make the native side allocate and fill a buffer for
+      // dstWidth=100 while the Dart side sized its asTypedList() view from
+      // the untruncated 4294967396, producing a huge out-of-bounds view
+      // over a tiny allocation.
+      expect(
+        () => resizePixels(
+          pixels,
+          srcWidth: 4,
+          srcHeight: 4,
+          dstWidth: 4294967396,
+          dstHeight: 10,
+          channels: 1,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'throws ArgumentError when dstHeight exceeds the native Int32 range',
+      () {
+        final pixels = buildRgba(4, 4);
+        expect(
+          () => resizePixels(
+            pixels,
+            srcWidth: 4,
+            srcHeight: 4,
+            dstWidth: 10,
+            dstHeight: 4294967396,
+            channels: 1,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('throws ArgumentError when srcWidth or srcHeight exceeds the native '
+        'Int32 range', () {
+      final pixels = buildRgba(4, 4);
+      expect(
+        () => resizePixels(
+          pixels,
+          srcWidth: 4294967396,
+          srcHeight: 4,
+          dstWidth: 4,
+          dstHeight: 4,
+          channels: 4,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => resizePixels(
+          pixels,
+          srcWidth: 4,
+          srcHeight: 4294967396,
+          dstWidth: 4,
+          dstHeight: 4,
+          channels: 4,
+        ),
+        throwsArgumentError,
+      );
+    });
   });
 
   group('encodeJpeg', () {

@@ -122,18 +122,21 @@ DecodedImage decodeImage(Uint8List bytes, {int? forceChannels}) {
     if (pixelsPtr == nullptr) {
       throw ImageFfiException(_failureReason());
     }
-    final width = outWidth.value;
-    final height = outHeight.value;
-    final channels = outChannels.value;
-    final length = width * height * channels;
-    final pixels = Uint8List.fromList(pixelsPtr.asTypedList(length));
-    imgffiFreeImage(pixelsPtr);
-    return DecodedImage(
-      width: width,
-      height: height,
-      channels: channels,
-      pixels: pixels,
-    );
+    try {
+      final width = outWidth.value;
+      final height = outHeight.value;
+      final channels = outChannels.value;
+      final length = width * height * channels;
+      final pixels = Uint8List.fromList(pixelsPtr.asTypedList(length));
+      return DecodedImage(
+        width: width,
+        height: height,
+        channels: channels,
+        pixels: pixels,
+      );
+    } finally {
+      imgffiFreeImage(pixelsPtr);
+    }
   } finally {
     freeBytes(dataPtr);
     malloc.free(outWidth);
@@ -218,9 +221,10 @@ enum ResizeColorSpace {
 /// This operates on already-decoded pixels; use [thumbnailJpeg] for the common
 /// decode-then-downscale-then-encode path.
 ///
-/// Throws an [ArgumentError] if any dimension is not positive, [channels] is
-/// out of range, or `pixels.length` does not match, and an [ImageFfiException]
-/// if the native resize fails.
+/// Throws an [ArgumentError] if any dimension is not positive, is too large to
+/// cross the native FFI boundary as a 32-bit `Int` without truncating,
+/// [channels] is out of range, or `pixels.length` does not match, and an
+/// [ImageFfiException] if the native resize fails.
 Uint8List resizePixels(
   Uint8List pixels, {
   required int srcWidth,
@@ -234,6 +238,10 @@ Uint8List resizePixels(
   _checkPositive(srcHeight, 'srcHeight');
   _checkPositive(dstWidth, 'dstWidth');
   _checkPositive(dstHeight, 'dstHeight');
+  _checkInt32(srcWidth, 'srcWidth');
+  _checkInt32(srcHeight, 'srcHeight');
+  _checkInt32(dstWidth, 'dstWidth');
+  _checkInt32(dstHeight, 'dstHeight');
   _checkChannels(channels);
   final expected = srcWidth * srcHeight * channels;
   if (pixels.length != expected) {
@@ -258,11 +266,13 @@ Uint8List resizePixels(
     if (outPtr == nullptr) {
       throw ImageFfiException('resize failed');
     }
-    final result = Uint8List.fromList(
-      outPtr.asTypedList(dstWidth * dstHeight * channels),
-    );
-    imgffiFreeBuffer(outPtr);
-    return result;
+    try {
+      return Uint8List.fromList(
+        outPtr.asTypedList(dstWidth * dstHeight * channels),
+      );
+    } finally {
+      imgffiFreeBuffer(outPtr);
+    }
   } finally {
     freeBytes(srcPtr);
   }
@@ -308,9 +318,11 @@ Uint8List encodeJpeg(
     if (outPtr == nullptr) {
       throw ImageFfiException('JPEG encoding failed');
     }
-    final result = Uint8List.fromList(outPtr.asTypedList(outLen.value));
-    imgffiFreeBuffer(outPtr);
-    return result;
+    try {
+      return Uint8List.fromList(outPtr.asTypedList(outLen.value));
+    } finally {
+      imgffiFreeBuffer(outPtr);
+    }
   } finally {
     freeBytes(srcPtr);
     malloc.free(outLen);
@@ -345,9 +357,11 @@ Uint8List encodePng(
     if (outPtr == nullptr) {
       throw ImageFfiException('PNG encoding failed');
     }
-    final result = Uint8List.fromList(outPtr.asTypedList(outLen.value));
-    imgffiFreeBuffer(outPtr);
-    return result;
+    try {
+      return Uint8List.fromList(outPtr.asTypedList(outLen.value));
+    } finally {
+      imgffiFreeBuffer(outPtr);
+    }
   } finally {
     freeBytes(srcPtr);
     malloc.free(outLen);
@@ -461,6 +475,22 @@ void _checkPositive(int value, String name) {
   }
 }
 
+/// The largest value a native `Int` parameter can carry without truncating;
+/// `@Native` marshals dart:ffi's `Int` as a 32-bit signed integer on every
+/// ABI, so anything above this silently wraps at the FFI boundary.
+const int _int32Max = 0x7FFFFFFF;
+
+void _checkInt32(int value, String name) {
+  if (value > _int32Max) {
+    throw ArgumentError.value(
+      value,
+      name,
+      'must not exceed $_int32Max, the largest value a native Int parameter '
+      'can carry without truncating',
+    );
+  }
+}
+
 void _checkChannels(int channels) {
   if (channels < 1 || channels > 4) {
     throw ArgumentError.value(channels, 'channels', 'must be between 1 and 4');
@@ -494,14 +524,9 @@ Future<Uint8List> thumbnailJpegAsync(
   Uint8List imageBytes, {
   int maxDimension = 256,
   int quality = 85,
-}) =>
-    Isolate.run(
-      () => thumbnailJpeg(
-        imageBytes,
-        maxDimension: maxDimension,
-        quality: quality,
-      ),
-    );
+}) => Isolate.run(
+  () => thumbnailJpeg(imageBytes, maxDimension: maxDimension, quality: quality),
+);
 
 /// The off-main-isolate version of [thumbnailPng]; see [thumbnailJpegAsync] for
 /// how the work is offloaded and [thumbnailPng] for the parameters. Use this
@@ -510,10 +535,7 @@ Future<Uint8List> thumbnailJpegAsync(
 Future<Uint8List> thumbnailPngAsync(
   Uint8List imageBytes, {
   int maxDimension = 256,
-}) =>
-    Isolate.run(
-      () => thumbnailPng(imageBytes, maxDimension: maxDimension),
-    );
+}) => Isolate.run(() => thumbnailPng(imageBytes, maxDimension: maxDimension));
 
 /// A counting semaphore that caps how many holders run at once.
 ///
@@ -604,16 +626,12 @@ Stream<Uint8List> thumbnailJpegBatch(
   int maxDimension = 256,
   int quality = 85,
   int? concurrency,
-}) =>
-    mapBounded(
-      images,
-      concurrency ?? Platform.numberOfProcessors,
-      (bytes) => thumbnailJpegAsync(
-        bytes,
-        maxDimension: maxDimension,
-        quality: quality,
-      ),
-    );
+}) => mapBounded(
+  images,
+  concurrency ?? Platform.numberOfProcessors,
+  (bytes) =>
+      thumbnailJpegAsync(bytes, maxDimension: maxDimension, quality: quality),
+);
 
 /// The PNG twin of [thumbnailJpegBatch]; see it for how concurrency is bounded
 /// and how results are ordered, and [thumbnailPng] for the parameters. Use this
@@ -625,9 +643,8 @@ Stream<Uint8List> thumbnailPngBatch(
   Iterable<Uint8List> images, {
   int maxDimension = 256,
   int? concurrency,
-}) =>
-    mapBounded(
-      images,
-      concurrency ?? Platform.numberOfProcessors,
-      (bytes) => thumbnailPngAsync(bytes, maxDimension: maxDimension),
-    );
+}) => mapBounded(
+  images,
+  concurrency ?? Platform.numberOfProcessors,
+  (bytes) => thumbnailPngAsync(bytes, maxDimension: maxDimension),
+);

@@ -47,8 +47,12 @@ void main() {
   });
 
   test('an image already within maxDimension keeps its size', () {
-    final small =
-        encodePng(Uint8List(64 * 64 * 4), width: 64, height: 64, channels: 4);
+    final small = encodePng(
+      Uint8List(64 * 64 * 4),
+      width: 64,
+      height: 64,
+      channels: 4,
+    );
     final decoded = decodeImage(thumbnailPng(small, maxDimension: 256));
     expect(decoded.width, 64);
     expect(decoded.height, 64);

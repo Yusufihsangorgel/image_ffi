@@ -1,3 +1,16 @@
+## 0.5.1
+
+- Fix a native buffer leak: `decodeImage`, `resizePixels`, `encodeJpeg`, and
+  `encodePng` freed the native output buffer only after copying it into a
+  Dart `Uint8List`. If that copy threw (out of memory on a large image), the
+  native buffer was never freed. Each free now runs in a `finally` around the
+  copy, so it happens whether the copy succeeds or throws.
+- Fix a silent truncation risk: `resizePixels` takes `srcWidth`, `srcHeight`,
+  `dstWidth`, and `dstHeight` as Dart `int`, but crosses the FFI boundary as a
+  32-bit native `Int`. A caller passing a dimension above 2^31-1 got it
+  silently wrapped at the boundary instead of an error. These now throw
+  `ArgumentError` before the call.
+
 ## 0.5.0
 
 - Add `thumbnailJpegBatch` and `thumbnailPngBatch` for processing a folder.

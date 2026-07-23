@@ -40,14 +40,14 @@ void main() {
         src[x] = x < 4 ? 0 : 255;
       }
       Uint8List run(ResizeColorSpace cs) => resizePixels(
-            src,
-            srcWidth: 8,
-            srcHeight: 1,
-            dstWidth: 1,
-            dstHeight: 1,
-            channels: 1,
-            colorSpace: cs,
-          );
+        src,
+        srcWidth: 8,
+        srcHeight: 1,
+        dstWidth: 1,
+        dstHeight: 1,
+        channels: 1,
+        colorSpace: cs,
+      );
       final srgb = run(ResizeColorSpace.srgb);
       final linear = run(ResizeColorSpace.linear);
       // sRGB averages in linear light and re-encodes (~188); linear averages
