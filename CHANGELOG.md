@@ -1,3 +1,24 @@
+## 1.0.0
+
+The API is stable. No behaviour changes; this freezes the surface after an
+adversarial pass over the FFI boundary, and pins what it found as tests.
+
+Verified by execution and now covered by `test/native_safety_test.dart`:
+
+- Undecodable data (garbage, a truncated file, a bare header) raises
+  `ImageFfiException`, and an empty buffer raises `ArgumentError` — the split
+  the README describes, checked rather than assumed.
+- Decoding, resizing and JPEG-encoding 2,000 times grows RSS by about four
+  megabytes. Each cycle allocates and frees several native buffers, so leaking
+  any of them would cost hundreds.
+- `thumbnailJpeg` bounds the longer side and never enlarges an image already
+  within the limit.
+- A non-positive resize target is rejected instead of reaching the native call.
+
+One honest caveat: the build hooks depend on `native_toolchain_c`, which is
+pre-1.0, so a breaking release there may need a new build of this package. It is
+a build-time dependency and does not reach the public API frozen here.
+
 ## 0.6.0
 
 - Seal `DecodedImage` and `ImageFfiException`. Both carried no class modifier,
