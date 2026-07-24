@@ -15,7 +15,7 @@ import 'bindings.dart';
 ///
 /// The [message] is stb's own diagnostic (`stbi_failure_reason`) when one is
 /// available, so it names the specific reason the operation failed.
-class ImageFfiException implements Exception {
+final class ImageFfiException implements Exception {
   /// Creates an exception with a human-readable [message].
   ImageFfiException(this.message);
 
@@ -33,7 +33,7 @@ class ImageFfiException implements Exception {
 /// `width * height * channels`. Channel order is red, green, blue, alpha for
 /// four-channel images and red, green, blue for three-channel images; a single
 /// channel is grayscale.
-class DecodedImage {
+final class DecodedImage {
   /// Creates a decoded image. The caller must ensure `pixels.length` equals
   /// `width * height * channels`.
   DecodedImage({

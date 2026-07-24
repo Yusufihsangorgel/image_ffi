@@ -1,3 +1,11 @@
+## 0.6.0
+
+- Seal `DecodedImage` and `ImageFfiException`. Both carried no class modifier,
+  so a 1.0.0 freeze would have made every field added to either one a breaking
+  change for anyone who had subclassed it. Neither is meant to be subtyped, and
+  nothing in the package, its tests or its example does. `ResizeColorSpace` is
+  an enum and was already closed. No behaviour change.
+
 ## 0.5.1
 
 - Fix a native buffer leak: `decodeImage`, `resizePixels`, `encodeJpeg`, and
