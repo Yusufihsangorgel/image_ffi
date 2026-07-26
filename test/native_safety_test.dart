@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:image_ffi/image_ffi.dart';
@@ -10,6 +11,15 @@ Uint8List _grayPng({int size = 64}) => encodePng(
   height: size,
   channels: 3,
 );
+
+Uint8List _noisePng(int size) {
+  final random = math.Random(7);
+  final pixels = Uint8List(size * size * 3);
+  for (var i = 0; i < pixels.length; i++) {
+    pixels[i] = random.nextInt(256);
+  }
+  return encodePng(pixels, width: size, height: size, channels: 3);
+}
 
 /// What has to hold for a package that hands bytes across an FFI boundary:
 /// bad input becomes a Dart error rather than a crash, and the decode/encode
@@ -37,44 +47,127 @@ void main() {
       expect(() => decodeImage(Uint8List(0)), throwsArgumentError);
     });
 
-    test('decode, resize and encode in a loop does not leak', () {
-      final png = _grayPng();
+    // RSS is a blunt instrument: mixing decode, resize and encode in one loop
+    // makes the Dart heap churn swamp any native leak. Each of the three tests
+    // below drives ONE native allocation site in a tight loop, which keeps the
+    // measured noise under a megabyte, and each bound is derived from the size
+    // of the buffer that site allocates rather than picked by eye.
 
-      Uint8List cycle() {
-        final decoded = decodeImage(png);
-        final small = resizePixels(
-          decoded.pixels,
-          srcWidth: decoded.width,
-          srcHeight: decoded.height,
-          dstWidth: 32,
-          dstHeight: 32,
-          channels: decoded.channels,
-        );
-        return encodeJpeg(
-          small,
-          width: 32,
-          height: 32,
-          channels: decoded.channels,
-        );
+    test('decodeImage does not leak its native buffers', () {
+      final png = _noisePng(192);
+
+      // Two buffers per call: the native copy of the encoded bytes
+      // (png.length) and the decoded pixels (192 * 192 * 3). Losing either
+      // costs ~158MB over this loop; measured noise is under 1MB.
+      const iterations = 1500;
+      final smallestLeakMb =
+          math.min(png.length, 192 * 192 * 3) * iterations / (1024 * 1024);
+
+      for (var i = 0; i < 200; i++) {
+        decodeImage(png);
       }
+      final before = ProcessInfo.currentRss;
+      for (var i = 0; i < iterations; i++) {
+        decodeImage(png);
+      }
+      final grownMb = (ProcessInfo.currentRss - before) / (1024 * 1024);
 
-      // Warm up so first-call allocations are not counted as growth.
-      for (var i = 0; i < 100; i++) {
+      expect(
+        smallestLeakMb,
+        greaterThan(100),
+        reason: 'payload too small to detect a leak',
+      );
+      expect(
+        grownMb,
+        lessThan(20),
+        reason:
+            'grew ${grownMb}MB over $iterations decodes; '
+            'the smallest leak this loop can spring is ${smallestLeakMb}MB',
+      );
+    });
+
+    test('resizePixels does not leak its native output buffer', () {
+      final decoded = decodeImage(_noisePng(192));
+
+      // 160 * 160 * 3 bytes of output per call, ~110MB across the loop.
+      const iterations = 1500;
+      final leakMb = 160 * 160 * 3 * iterations / (1024 * 1024);
+
+      Uint8List cycle() => resizePixels(
+        decoded.pixels,
+        srcWidth: decoded.width,
+        srcHeight: decoded.height,
+        dstWidth: 160,
+        dstHeight: 160,
+        channels: decoded.channels,
+      );
+
+      for (var i = 0; i < 200; i++) {
         cycle();
       }
-
       final before = ProcessInfo.currentRss;
-      for (var i = 0; i < 2000; i++) {
+      for (var i = 0; i < iterations; i++) {
         cycle();
       }
       final grownMb = (ProcessInfo.currentRss - before) / (1024 * 1024);
 
-      // Each cycle allocates and frees several native buffers; leaking any of
-      // them would cost hundreds of megabytes across 2000 iterations.
+      expect(
+        leakMb,
+        greaterThan(100),
+        reason: 'payload too small to detect a leak',
+      );
       expect(
         grownMb,
-        lessThan(50),
-        reason: 'grew ${grownMb}MB over 2000 cycles',
+        lessThan(20),
+        reason:
+            'grew ${grownMb}MB over $iterations resizes; '
+            'a lost free would cost ${leakMb}MB',
+      );
+    });
+
+    test('encodeJpeg does not leak its native output buffer', () {
+      final decoded = decodeImage(_noisePng(192));
+      final small = resizePixels(
+        decoded.pixels,
+        srcWidth: decoded.width,
+        srcHeight: decoded.height,
+        dstWidth: 160,
+        dstHeight: 160,
+        channels: decoded.channels,
+      );
+
+      // The encoded JPEG is the smallest of the buffers here, which is why the
+      // noise band matters: ~19KB per call, so the loop has to be long enough
+      // for a lost free to clear it by an order of magnitude.
+      const iterations = 1500;
+
+      for (var i = 0; i < 200; i++) {
+        encodeJpeg(small, width: 160, height: 160, channels: 3);
+      }
+      final before = ProcessInfo.currentRss;
+      var encodedBytes = 0;
+      for (var i = 0; i < iterations; i++) {
+        encodedBytes = encodeJpeg(
+          small,
+          width: 160,
+          height: 160,
+          channels: 3,
+        ).length;
+      }
+      final grownMb = (ProcessInfo.currentRss - before) / (1024 * 1024);
+      final leakMb = encodedBytes * iterations / (1024 * 1024);
+
+      expect(
+        leakMb,
+        greaterThan(20),
+        reason: 'payload too small to detect a leak',
+      );
+      expect(
+        grownMb,
+        lessThan(10),
+        reason:
+            'grew ${grownMb}MB over $iterations encodes; '
+            'a lost free would cost ${leakMb}MB',
       );
     });
 
