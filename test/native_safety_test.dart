@@ -49,9 +49,15 @@ void main() {
 
     // RSS is a blunt instrument: mixing decode, resize and encode in one loop
     // makes the Dart heap churn swamp any native leak. Each of the three tests
-    // below drives ONE native allocation site in a tight loop, which keeps the
-    // measured noise under a megabyte, and each bound is derived from the size
-    // of the buffer that site allocates rather than picked by eye.
+    // below drives ONE native allocation site in a tight loop, and each bound
+    // is a fraction of the buffer that site allocates rather than a number
+    // picked by eye.
+    //
+    // The fraction is 0.4 because the noise floor is not the same everywhere:
+    // it scales with how much the loop churns. On macOS these loops measure
+    // under a megabyte; on ubuntu-latest the decode loop grew 25.8MB with
+    // every free in place, against a 158MB cost for losing one. Anything
+    // between those two numbers works, and 0.4 sits roughly midway.
 
     test('decodeImage does not leak its native buffers', () {
       final png = _noisePng(192);
@@ -79,7 +85,7 @@ void main() {
       );
       expect(
         grownMb,
-        lessThan(20),
+        lessThan(smallestLeakMb * 0.4),
         reason:
             'grew ${grownMb}MB over $iterations decodes; '
             'the smallest leak this loop can spring is ${smallestLeakMb}MB',
@@ -118,7 +124,7 @@ void main() {
       );
       expect(
         grownMb,
-        lessThan(20),
+        lessThan(leakMb * 0.4),
         reason:
             'grew ${grownMb}MB over $iterations resizes; '
             'a lost free would cost ${leakMb}MB',
@@ -164,7 +170,7 @@ void main() {
       );
       expect(
         grownMb,
-        lessThan(10),
+        lessThan(leakMb * 0.4),
         reason:
             'grew ${grownMb}MB over $iterations encodes; '
             'a lost free would cost ${leakMb}MB',
