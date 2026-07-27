@@ -1,3 +1,18 @@
+## 1.0.1
+
+- **Link libm on Android, where the decoder would otherwise fail at `dlopen`.**
+  stb_image calls `pow` for gamma conversion and stb_image_write calls `frexp`
+  when writing HDR. Android keeps both in a separate libm, and its linker will
+  not resolve a symbol from a library that is absent from `DT_NEEDED`, so the
+  shim compiled cleanly and then failed to load on the device. On the 1.0.0
+  library `llvm-nm -u --dynamic` reported `U pow` and `U frexp` carrying no
+  version tag while every other import carried one, and `DT_NEEDED` listed only
+  libdl and libc. Rebuilt, the same commands report `pow@LIBC`, `frexp@LIBC`
+  and `ldexp@LIBC`, with `libm.so` in `DT_NEEDED`. Every other target hid the
+  omission: macOS and iOS take math from libSystem, and glibc 2.34 folded libm
+  into libc. Linux is linked against libm too, because musl and older glibc
+  still need it and on modern glibc it costs nothing.
+
 ## 1.0.0
 
 The API is stable. No behaviour changes; this freezes the surface after an

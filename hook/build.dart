@@ -24,6 +24,20 @@ void main(List<String> args) async {
       // warnings-as-errors, would fail the build. stb is otherwise portable
       // and needs no POSIX feature macros.
       defines: {if (targetOS == OS.windows) '_CRT_SECURE_NO_WARNINGS': null},
+      libraries: [
+        // stb_image calls pow for gamma conversion and stb_image_write calls
+        // frexp when writing HDR. Android keeps those in a separate libm, and
+        // its linker refuses to resolve a symbol from a library that is not in
+        // DT_NEEDED, so without this the library builds cleanly and then fails
+        // at dlopen on the device. Every other target hid the omission: macOS
+        // and iOS get math from libSystem, and glibc 2.34 folded libm into
+        // libc. Linux is listed anyway because musl and older glibc still need
+        // it, and on modern glibc it costs nothing.
+        //
+        // Not on Windows: there is no separate math library there, and this
+        // list is turned into `m.lib` for MSVC, which does not exist.
+        if (targetOS == OS.android || targetOS == OS.linux) 'm',
+      ],
       language: Language.c,
     );
     await builder.run(input: input, output: output);
