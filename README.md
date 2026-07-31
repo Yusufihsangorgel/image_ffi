@@ -167,7 +167,7 @@ The native library is compiled from the vendored stb sources by
 C compiler for the target: Linux, macOS and Windows on the Dart CLI and server,
 and in Flutter apps whose build has native assets enabled, where the same hook
 runs and the async variants keep image work off the UI isolate. Requires Dart
-3.9 or later.
+3.10 or later.
 
 The CI matrix builds and tests on Ubuntu, macOS and Windows.
 

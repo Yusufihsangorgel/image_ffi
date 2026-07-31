@@ -1,3 +1,11 @@
+## 1.0.2
+
+- **Declare the SDK this package can actually resolve on.** The constraint read
+  `^3.9.0`, but the `hooks` dependency that runs the native build requires
+  `>=3.10.0`. On Dart 3.9 the package looked supported and then failed to
+  resolve, with an error naming `hooks` rather than anything the reader had
+  asked for. The pubspec and the README now both say 3.10.
+
 ## 1.0.1
 
 - **Link libm on Android, where the decoder would otherwise fail at `dlopen`.**
