@@ -6,6 +6,8 @@ import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'exif.dart';
+
 import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
@@ -388,13 +390,19 @@ Uint8List thumbnailJpeg(
   Uint8List imageBytes, {
   int maxDimension = 256,
   int quality = 85,
+  bool applyOrientation = true,
 }) {
   _checkPositive(maxDimension, 'maxDimension');
   if (quality < 1 || quality > 100) {
     throw ArgumentError.value(quality, 'quality', 'must be between 1 and 100');
   }
 
-  final image = decodeImage(imageBytes);
+  final image = applyOrientation
+      ? applyExifOrientation(
+          decodeImage(imageBytes),
+          exifOrientation(imageBytes),
+        )
+      : decodeImage(imageBytes);
   final longerSide = math.max(image.width, image.height);
 
   int dstWidth;
@@ -434,10 +442,19 @@ Uint8List thumbnailJpeg(
 /// for on logos, icons, screenshots, and anything with transparency, where a
 /// JPEG would flatten the transparent areas onto an opaque background. PNG is
 /// lossless, so there is no quality knob.
-Uint8List thumbnailPng(Uint8List imageBytes, {int maxDimension = 256}) {
+Uint8List thumbnailPng(
+  Uint8List imageBytes, {
+  int maxDimension = 256,
+  bool applyOrientation = true,
+}) {
   _checkPositive(maxDimension, 'maxDimension');
 
-  final image = decodeImage(imageBytes);
+  final image = applyOrientation
+      ? applyExifOrientation(
+          decodeImage(imageBytes),
+          exifOrientation(imageBytes),
+        )
+      : decodeImage(imageBytes);
   final longerSide = math.max(image.width, image.height);
 
   int dstWidth;

@@ -37,3 +37,4 @@ export 'src/image_ffi_base.dart'
         thumbnailPng,
         thumbnailPngAsync,
         thumbnailPngBatch;
+export 'src/exif.dart' show exifOrientation, applyExifOrientation;

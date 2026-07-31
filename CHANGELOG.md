@@ -1,3 +1,19 @@
+## 1.1.0
+
+- **Turn phone photos upright.** A camera writes the sensor's pixels unrotated
+  and records how the phone was held in the EXIF orientation tag; every viewer
+  applies it silently. stb does not parse EXIF, so a portrait photo decoded to
+  a landscape buffer and `thumbnailJpeg` produced a sideways thumbnail with
+  nothing to indicate anything was wrong — on the most common thumbnail input
+  there is.
+
+  `exifOrientation` reads the tag and `applyExifOrientation` applies any of the
+  eight values, including the four that swap the axes and the four that mirror.
+  `thumbnailJpeg` and `thumbnailPng` now use them by default; pass
+  `applyOrientation: false` for the raw sensor framing. A file with no EXIF, a
+  malformed tag, or a value outside 1 to 8 reads as upright, so a broken tag
+  can never fail a decode that would otherwise have worked.
+
 ## 1.0.2
 
 - **Declare the SDK this package can actually resolve on.** The constraint read
