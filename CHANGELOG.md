@@ -1,3 +1,13 @@
+## 1.1.1
+
+- The example runs without an argument. It used to print a usage line and exit
+  64 unless you handed it an image, which is what anyone following the Example
+  tab on pub.dev would hit first. It now encodes a 1200x800 gradient with the
+  package's own `encodeJpeg` and thumbnails that, so the run shows the whole
+  path — read the dimensions without decoding, downscale and re-encode in one
+  native call — and reports the thumbnail as a percentage of the source. A path
+  argument still works exactly as before.
+
 ## 1.1.0
 
 - **Turn phone photos upright.** A camera writes the sensor's pixels unrotated
