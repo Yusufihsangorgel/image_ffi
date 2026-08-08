@@ -14,10 +14,7 @@ topics:
   - ffi
 
 screenshots:
-  - description: >-
-      Median milliseconds to decode, resize and encode a 2000x2000 image: the full
-       thumbnail pipeline takes 27.3 ms against the pure-Dart image package's 141.
-      7.
+  - description: "Median milliseconds to decode, resize and encode a 2000x2000 image: the full thumbnail pipeline takes 27.3 ms against the pure-Dart image package's 141.7."
     path: doc/benchmark.png
 environment:
   sdk: ^3.10.0
