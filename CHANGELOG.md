@@ -1,3 +1,15 @@
+## 1.1.2
+
+- Put the screenshot caption on one line. It was a folded scalar wrapped across
+  three lines, and the continuation lines were indented further than the first,
+  which keeps the breaks instead of folding them to spaces. The benchmark figure
+  on the pub.dev page has therefore been reading `141.` and `7.` as separate
+  lines since the caption was added, which makes the one number the chart exists
+  to show look wrong. Caption text only; the figure and the measurement behind
+  it are unchanged.
+
+`lib/` is byte-identical to 1.1.1.
+
 ## 1.1.1
 
 - The example runs without an argument. It used to print a usage line and exit
