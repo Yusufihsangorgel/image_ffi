@@ -14,6 +14,9 @@ one-call thumbnails, and it runs those in native code. If your workload is
 "read an image, make a thumbnail, write it back", this is several times faster.
 For cropping, drawing, filters, format conversions and animation, use `image`.
 
+![The benchmark running: decode, resize and encode timings for this package
+against `package:image` on the same input](https://raw.githubusercontent.com/Yusufihsangorgel/image_ffi/main/doc/demo.gif)
+
 ## Why this instead of what you already have
 
 **Instead of `package:image`.** There is no capability gap here: both decode,
