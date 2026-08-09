@@ -14,6 +14,37 @@ one-call thumbnails, and it runs those in native code. If your workload is
 "read an image, make a thumbnail, write it back", this is several times faster.
 For cropping, drawing, filters, format conversions and animation, use `image`.
 
+## Why this instead of what you already have
+
+**Instead of `package:image`.** There is no capability gap here: both decode,
+resize, and re-encode PNG and JPEG. The difference is time. `bench/bench.dart`
+synthesizes a 2000x2000 PNG, decodes it, resizes the longer side to 256 px,
+and re-encodes, timing both libraries on the same bytes. The last run on an
+M4 Pro: decode 23.7 ms against 99.4, resize 5.1 ms against 47.1, and 29.5 ms
+against 150.2 for the whole pipeline. Run `dart run bench/bench.dart` and get
+your own numbers.
+
+**Instead of `pixer`.** Pixer is the closest native competitor and it is
+carefully built, but its build hook pulls a prebuilt binary over the network:
+`downloadUri` returns
+`https://github.com/hawkkiller/pixer/releases/download/$version/$target`
+(`lib/src/hook/download_asset.dart:9`). The download is hash-verified, but you
+still need the network at build time, and you run a binary you did not
+compile. This package's `hook/build.dart` makes no network calls; it compiles
+the vendored `stb_image` and `stb_image_write` sources locally through
+`CBuilder`, so an offline CI runner still ends up with a working library.
+
+**Reach for it when**
+
+- You generate thumbnails on a server and the resize step is in your latency budget.
+- You process images in a batch job where throughput per core matters.
+- Your CI has no outbound network and every native dependency must build from source.
+
+**Skip it** if you need anything past decode, resize, and JPEG/PNG encode:
+`package:image` writes WebP, TIFF, GIF, and ICO as well (see its
+`lib/src/formats/`), and ships drawing, filters, and font rendering that this
+package has no answer for.
+
 ## Formats
 
 - Decode: PNG, JPEG, BMP, GIF, PSD, TGA, HDR, PIC (whatever stb_image reads).
