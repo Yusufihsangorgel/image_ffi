@@ -1,3 +1,12 @@
+## 1.1.4
+
+- Documents how to ship a standalone binary. `dart compile exe` refuses outright
+  on a package with a build hook; `dart build cli` runs the hook and writes the
+  executable and its library into a `bundle/` directory. The binary resolves the
+  library through a relative `../lib`, so a copy of it on its own fails at the
+  first call, which is why the whole folder has to ship. Both halves were run to
+  produce the output quoted in the README.
+
 ## 1.1.3
 
 Documentation and one new example. No API or behaviour change.
