@@ -1,3 +1,23 @@
+## 1.1.3
+
+Documentation and one new example. No API or behaviour change.
+
+- The README now says that phone photos come out upright. `thumbnailJpeg` and
+  `thumbnailPng` have read the EXIF orientation tag and applied it since 1.1.0,
+  and neither the README nor any example mentioned it. The one thing that
+  separates this thumbnailer from a decode-and-resize loop was invisible to
+  anyone reading the page. `exifOrientation` and `applyExifOrientation` are in
+  the API list now as well.
+- `example/upright_thumbnails.dart` takes a 400x300 sensor buffer tagged
+  orientation 6 and prints what each path returns: `decodeImage` gives 400x300,
+  `thumbnailJpeg` gives 96x128 with nothing passed to it, and the same call with
+  `applyOrientation: false` gives 128x96. The README quotes that output.
+- The Platforms section reports mobile and desktop Flutter from a run rather
+  than a build. An app that encodes and decodes a PNG at startup returns `2x2`
+  on an iPhone 17 Pro simulator running iOS 26.5, an Android 15 arm64 emulator
+  (API 35) and macOS desktop. A build going green is weaker evidence: `re2`
+  1.0.1 built green on Android and threw `dlopen failed` on the first call.
+
 ## 1.1.2
 
 - Put the screenshot caption on one line. It was a folded scalar wrapped across

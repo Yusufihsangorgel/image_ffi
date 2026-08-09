@@ -3,9 +3,9 @@
 ![image_ffi banner](doc/banner.png)
 
 Native image decode, resize and encode for Dart, backed by Sean Barrett's
-[stb](https://github.com/nothings/stb) single-file C libraries over FFI. The stb
-sources are compiled from source by a Dart build hook, so there is no prebuilt
-binary to ship and nothing to install beyond a C toolchain.
+[stb](https://github.com/nothings/stb) single-file C libraries over FFI. A Dart
+build hook compiles the stb sources at build time: there is no prebuilt binary
+to ship and nothing to install beyond a C toolchain.
 
 The pure-Dart [`image`](https://pub.dev/packages/image) package is the right
 choice when you need its wide manipulation and filter suite. `image_ffi` is
@@ -66,9 +66,45 @@ void main() {
 ```
 
 Decode and encode copy the native bytes into a Dart `Uint8List` and free the
-native buffer before returning, so you never manage native memory. Invalid
-input throws `ImageFfiException` with stb's own failure reason; bad arguments
-throw `ArgumentError`.
+native buffer before returning. You never manage native memory. Invalid input
+throws `ImageFfiException` with stb's own failure reason; bad arguments throw
+`ArgumentError`.
+
+## Phone photos come out upright
+
+Hold a phone in portrait and the sensor still records a landscape buffer. What
+makes the photo upright is a number in the EXIF header saying how to turn it.
+Viewers read that number. Code that decodes pixels does not, which is how a
+thumbnailer produces sideways thumbnails and reports no error at all.
+
+`thumbnailJpeg` and `thumbnailPng` read the tag and apply it. Nothing to pass:
+
+```dart
+final thumb = thumbnailJpeg(photoBytes, maxDimension: 128);
+```
+
+`example/upright_thumbnails.dart` takes a 400x300 sensor buffer tagged
+orientation 6 and prints what each path returns:
+
+```
+EXIF orientation tag       6  (6: turn 90 CW)
+decodeImage                400x300    the sensor buffer
+thumbnailJpeg              96x128     upright, nothing asked for
+  ...applyOrientation off  128x96     the sideways version
+applyExifOrientation       300x400    same result, by hand
+```
+
+Pass `applyOrientation: false` when you want the sensor framing, and reach for
+`exifOrientation` and `applyExifOrientation` when you decode and resize
+yourself:
+
+```dart
+final image = decodeImage(photoBytes);
+final upright = applyExifOrientation(image, exifOrientation(photoBytes));
+```
+
+`exifOrientation` returns 1 for a file with no EXIF, a value out of range, or a
+malformed tag, so a bad header costs you a rotation rather than a decode.
 
 ## Benchmark
 
@@ -86,9 +122,9 @@ an Apple M-series laptop:
 
 The resize row uses cubic interpolation for the `image` package so both sides do
 a comparable high-quality filter. The `image` package's default nearest-neighbor
-resize is faster than either (about 0.4 ms here) but much lower quality, so it is
-not a like-for-like comparison. Numbers are machine-dependent; reproduce them
-with `dart run bench/bench.dart`.
+resize is faster than either (about 0.4 ms here) at much lower quality;
+measuring against that would not be like-for-like. Numbers are
+machine-dependent; reproduce them with `dart run bench/bench.dart`.
 
 ## API
 
@@ -102,10 +138,15 @@ with `dart run bench/bench.dart`.
   RGBA, so edges against transparency stay clean.
 - `encodeJpeg(pixels, {width, height, channels, quality})` and
   `encodePng(pixels, {width, height, channels})`.
-- `thumbnailJpeg(bytes, {maxDimension, quality})` decodes, downscales so the
-  longer side is at most `maxDimension` (never enlarging), and JPEG-encodes.
-  `thumbnailPng(bytes, {maxDimension})` does the same but PNG-encodes, keeping
-  the alpha channel a JPEG would drop.
+- `exifOrientation(bytes)` reads a JPEG's orientation tag, returning 1 to 8, and
+  1 for anything it cannot read. `applyExifOrientation(image, orientation)`
+  returns the upright version of a `DecodedImage`.
+- `thumbnailJpeg(bytes, {maxDimension, quality, applyOrientation})` decodes,
+  downscales so the longer side is at most `maxDimension` (never enlarging), and
+  JPEG-encodes. `applyOrientation` defaults to true, which is what keeps phone
+  photos upright; see above. `thumbnailPng(bytes, {maxDimension,
+  applyOrientation})` does the same but PNG-encodes, keeping the alpha channel a
+  JPEG would drop.
 - `thumbnailJpegAsync` and `thumbnailPngAsync` take the same arguments and
   return a `Future`; see below.
 - `thumbnailJpegBatch(images, {maxDimension, quality, concurrency})` and
@@ -151,9 +192,9 @@ await for (final thumb in thumbnailJpegBatch(images, concurrency: 4)) {
 ```
 
 `maxDimension` and `quality` mean what they do on `thumbnailJpeg`. Each
-thumbnail is emitted as it finishes, so results arrive in completion order, not
-the order of `images`; pair a result with its source before the call if you
-need the correspondence. A failure on one image surfaces as an error on the
+thumbnail is emitted as it finishes. Results arrive in completion order rather
+than the order of `images`; pair a result with its source before the call if
+you need the correspondence. A failure on one image surfaces as an error on the
 stream while the rest keep going.
 
 ## How it works
@@ -170,6 +211,13 @@ runs and the async variants keep image work off the UI isolate. Requires Dart
 3.10 or later.
 
 The CI matrix builds and tests on Ubuntu, macOS and Windows.
+
+Mobile and desktop Flutter are checked by running a decode inside the app
+rather than by building it, because a green build says nothing about whether
+the library loads. A Flutter app that encodes and decodes a small PNG at
+startup and prints the result returns `2x2` on an iPhone 17 Pro simulator
+running iOS 26.5, on an Android 15 arm64 emulator (API 35), and on macOS
+desktop.
 
 ## Credits
 
