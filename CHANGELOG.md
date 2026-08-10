@@ -1,3 +1,15 @@
+## 1.2.3
+
+- Six tests for the EXIF parser's bounds, from a mutation audit: thirteen
+  deliberate faults injected into `lib/`, six of them still green. Five were
+  off-by-ones in `exif.dart`, which reads bytes out of a photograph somebody
+  uploaded. Three are now caught -- the big-endian TIFF branch (no fixture
+  used 'MM' before), a segment ending on the last byte of the file, and an IFD
+  loop reading one entry past the count it declares.
+- Two of the survivors are equivalent mutants and one changes cost rather than
+  output. All three are named in the test file so the next audit does not
+  chase them.
+
 ## 1.2.2
 
 - `ResizeColorSpace` was exported, documented, and demonstrated nowhere. New
