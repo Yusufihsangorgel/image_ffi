@@ -1,3 +1,12 @@
+## 1.2.2
+
+- `ResizeColorSpace` was exported, documented, and demonstrated nowhere. New
+  `example/gamma_correct_resize.dart` measures both settings against the value
+  a black-and-white checkerboard actually emits: resampling in light lands on
+  188, skipping the conversion lands on 127. A figure paints the two greys from
+  those same bytes. Nothing changed in the library — the default was already
+  right — but a reader could not see that it mattered.
+
 ## 1.2.1
 
 - The README opens with a recording of the package running, rendered from a

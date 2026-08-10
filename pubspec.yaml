@@ -3,7 +3,7 @@ description: >-
   Fast native image resize, thumbnail and JPEG/PNG encode for Dart over FFI.
   Several times quicker than the pure-Dart image package; stb-backed, no
   prebuilt binary.
-version: 1.2.1
+version: 1.2.2
 repository: https://github.com/Yusufihsangorgel/image_ffi
 
 topics:
@@ -16,6 +16,10 @@ topics:
 screenshots:
   - description: "Median milliseconds to decode, resize and encode a 2000x2000 image: the full thumbnail pipeline takes 27.3 ms against the pure-Dart image package's 141.7."
     path: doc/benchmark.png
+  - description: >-
+      The same checkerboard shrunk to one pixel: resampling in light gives 188,
+      the honest grey, and skipping that conversion gives 127.
+    path: doc/gamma-resize.png
 environment:
   sdk: ^3.10.0
 

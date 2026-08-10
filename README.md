@@ -140,6 +140,29 @@ final upright = applyExifOrientation(image, exifOrientation(photoBytes));
 `exifOrientation` returns 1 for a file with no EXIF, a value out of range, or a
 malformed tag, so a bad header costs you a rotation rather than a decode.
 
+## A downscale that does not go dark
+
+Resampling is averaging, and averaging sRGB bytes averages the wrong thing.
+A byte is not light: code 128 emits about 22% of what 255 does, not half. Take
+the mean of the codes and every downscale comes out darker than the image it
+came from.
+
+![Two grey swatches from the same black-and-white checkerboard shrunk to one
+pixel. The srgb one is 188, the light-correct value; the linear one is 127,
+61 codes too
+dark.](https://raw.githubusercontent.com/Yusufihsangorgel/image_ffi/main/doc/gamma-resize.png)
+
+`resizePixels` converts to linear light, resamples, and converts back, and
+`ResizeColorSpace.srgb` is the default, so photographs and UI images get this
+without asking. `ResizeColorSpace.linear` skips the conversion, which is right
+only when the bytes already are light — a mask, a depth map, a channel you keep
+linear on purpose. Alpha is always resampled linearly either way.
+
+`dart run example/gamma_correct_resize.dart` measures both against the value the
+checkerboard actually emits, and `tool/gamma_figure.dart` paints the swatches
+from the bytes that run produced. Getting this wrong throws nothing and looks
+fine in isolation, which is why it survives in so much image code.
+
 ## Benchmark
 
 Decode a 2000x2000 PNG and downscale it to a 256px thumbnail, `image_ffi`
