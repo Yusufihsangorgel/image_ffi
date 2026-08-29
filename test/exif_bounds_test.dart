@@ -74,8 +74,11 @@ void main() {
       // big-endian branch changed nothing and the suite stayed green. Canon
       // and Nikon write 'MM'.
       expect(exifOrientation(jpegWithOrientation(6, endian: Endian.big)), 6);
-      expect(exifOrientation(jpegWithOrientation(6)), 6,
-          reason: 'little-endian must still work');
+      expect(
+        exifOrientation(jpegWithOrientation(6)),
+        6,
+        reason: 'little-endian must still work',
+      );
     });
 
     test('accepts a segment that ends on the last byte of the file', () {
@@ -97,9 +100,13 @@ void main() {
       // the count: reading one too many finds an orientation that the file
       // does not claim to have.
       final lying = jpegWithOrientation(8, entryCount: 0);
-      expect(exifOrientation(lying), 1,
-          reason: 'an IFD that declares no entries has no orientation, '
-              'whatever the bytes after the count happen to look like');
+      expect(
+        exifOrientation(lying),
+        1,
+        reason:
+            'an IFD that declares no entries has no orientation, '
+            'whatever the bytes after the count happen to look like',
+      );
     });
 
     test('a truncated file is answered, not thrown at', () {
@@ -108,8 +115,11 @@ void main() {
       final full = jpegWithOrientation(6);
       for (var cut = 0; cut < full.length; cut++) {
         final truncated = Uint8List.sublistView(full, 0, cut);
-        expect(exifOrientation(truncated), isA<int>(),
-            reason: 'threw on a $cut-byte prefix');
+        expect(
+          exifOrientation(truncated),
+          isA<int>(),
+          reason: 'threw on a $cut-byte prefix',
+        );
       }
     });
 
@@ -163,8 +173,11 @@ void main() {
       final exact = thumbnailPng(png, maxDimension: size);
       final under = thumbnailPng(png, maxDimension: size + 1);
 
-      expect(exact, equals(under),
-          reason: 'at the limit and under it must both skip the resize');
+      expect(
+        exact,
+        equals(under),
+        reason: 'at the limit and under it must both skip the resize',
+      );
     });
   });
 }
