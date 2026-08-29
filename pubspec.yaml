@@ -3,7 +3,7 @@ description: >-
   Fast native image resize, thumbnail and JPEG/PNG encode for Dart over FFI.
   Several times quicker than the pure-Dart image package; stb-backed, no
   prebuilt binary.
-version: 1.2.4
+version: 1.2.5
 repository: https://github.com/Yusufihsangorgel/image_ffi
 
 topics:
@@ -35,7 +35,7 @@ platforms:
 dependencies:
   ffi: ^2.1.0
   hooks: '>=2.0.2 <3.0.0'
-  code_assets: ^1.2.1
+  code_assets: ^2.0.0
   native_toolchain_c: '>=0.19.2 <0.20.0'
 
 dev_dependencies:

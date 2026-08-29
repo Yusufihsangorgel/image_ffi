@@ -1,3 +1,8 @@
+## 1.2.5
+
+- Support `code_assets` 2.x. The build hook now uses its native-library header
+  validation while compiling and bundling the image shim.
+
 ## 1.2.4
 
 - Declare the platforms this package actually builds and has been run on.
