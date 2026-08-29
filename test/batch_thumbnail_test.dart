@@ -78,39 +78,42 @@ void main() {
     }
   });
 
-  test('mapBounded never runs more than concurrency work calls at once', () async {
-    var inFlight = 0;
-    var peak = 0;
-    // Each work call must wait to be released, so several sit ready at once and
-    // the semaphore is the only thing keeping the count down.
-    final gates = List.generate(8, (_) => Completer<void>());
+  test(
+    'mapBounded never runs more than concurrency work calls at once',
+    () async {
+      var inFlight = 0;
+      var peak = 0;
+      // Each work call must wait to be released, so several sit ready at once and
+      // the semaphore is the only thing keeping the count down.
+      final gates = List.generate(8, (_) => Completer<void>());
 
-    final results = mapBounded<int, int>(List.generate(8, (i) => i), 2, (
-      i,
-    ) async {
-      inFlight++;
-      if (inFlight > peak) peak = inFlight;
-      await gates[i].future;
-      inFlight--;
-      return i * 10;
-    });
+      final results = mapBounded<int, int>(List.generate(8, (i) => i), 2, (
+        i,
+      ) async {
+        inFlight++;
+        if (inFlight > peak) peak = inFlight;
+        await gates[i].future;
+        inFlight--;
+        return i * 10;
+      });
 
-    final collected = <int>[];
-    final done = results.listen(collected.add).asFuture<void>();
+      final collected = <int>[];
+      final done = results.listen(collected.add).asFuture<void>();
 
-    // Let the started work calls register, then release them one at a time so
-    // the pool only ever refills up to the cap.
-    for (var i = 0; i < gates.length; i++) {
-      await Future<void>.delayed(Duration.zero);
-      expect(inFlight, lessThanOrEqualTo(2));
-      gates[i].complete();
-    }
-    await done;
+      // Let the started work calls register, then release them one at a time so
+      // the pool only ever refills up to the cap.
+      for (var i = 0; i < gates.length; i++) {
+        await Future<void>.delayed(Duration.zero);
+        expect(inFlight, lessThanOrEqualTo(2));
+        gates[i].complete();
+      }
+      await done;
 
-    expect(peak, 2);
-    expect(collected, hasLength(8));
-    expect(collected.toSet(), {for (var i = 0; i < 8; i++) i * 10});
-  });
+      expect(peak, 2);
+      expect(collected, hasLength(8));
+      expect(collected.toSet(), {for (var i = 0; i < 8; i++) i * 10});
+    },
+  );
 
   test('mapBounded rejects a non-positive concurrency', () {
     expect(
