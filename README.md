@@ -293,21 +293,21 @@ Dart 3.11.
 
 ## Platforms
 
-The native library is compiled from the vendored stb sources by
-`hook/build.dart` using Dart's native build hooks. It works anywhere Dart runs a
-C compiler for the target: Linux, macOS and Windows on the Dart CLI and server,
-and in Flutter apps whose build has native assets enabled, where the same hook
-runs and the async variants keep image work off the UI isolate. Requires Dart
-3.10 or later.
+`pubspec.yaml` lists android, ios, linux, macos and windows. Those are the
+targets the hook is written for and that have been run. Linux, macOS and
+Windows are the CI matrix (`dart test` on Ubuntu, macOS and Windows). iOS
+and Android were run as Flutter apps, because a green build does not prove
+the library loads: a 2x2 PNG round-trip at startup returns `2x2` on an
+iPhone 17 Pro simulator running iOS 26.5 and on an Android 15 arm64
+emulator (API 35), and the same on macOS desktop.
 
-The CI matrix builds and tests on Ubuntu, macOS and Windows.
+Web is not listed. There is no C compiler and no native assets. Fuchsia is
+a `CBuilder` OS the hook does not refuse; that is not support, and nothing
+has built or run there.
 
-Mobile and desktop Flutter are checked by running a decode inside the app
-rather than by building it, because a green build says nothing about whether
-the library loads. A Flutter app that encodes and decodes a small PNG at
-startup and prints the result returns `2x2` on an iPhone 17 Pro simulator
-running iOS 26.5, on an Android 15 arm64 emulator (API 35), and on macOS
-desktop.
+Requires Dart 3.10 or later. In a Flutter app whose build has native assets
+enabled, the same hook runs and the async variants keep image work off the
+UI isolate.
 
 ## Credits
 

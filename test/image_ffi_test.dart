@@ -146,6 +146,15 @@ void main() {
       expect(() => decodeImage(png, forceChannels: 0), throwsArgumentError);
       expect(() => decodeImage(png, forceChannels: 5), throwsArgumentError);
     });
+
+    test('forceChannels: 1 is accepted and yields grayscale', () {
+      // Kills: `forceChannels < 1` -> `<= 1`, which would reject the
+      // documented lower bound. 0 and 5 were already covered; 1 was not.
+      final png = oraclePng(buildRgb(8, 8), 8, 8, 3);
+      final decoded = decodeImage(png, forceChannels: 1);
+      expect(decoded.channels, 1);
+      expect(decoded.pixels.length, 8 * 8);
+    });
   });
 
   group('imageInfo', () {
@@ -268,6 +277,22 @@ void main() {
       );
     });
 
+    test('throws ArgumentError on a zero channel count', () {
+      // Kills: `channels < 1` -> `< 0`, which would let 0 through. The
+      // existing out-of-range test only used 5.
+      expect(
+        () => resizePixels(
+          Uint8List(0),
+          srcWidth: 1,
+          srcHeight: 1,
+          dstWidth: 1,
+          dstHeight: 1,
+          channels: 0,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('throws ArgumentError when dstWidth exceeds the native Int32 range '
         'instead of silently truncating at the FFI boundary', () {
       final pixels = buildRgba(4, 4);
@@ -333,6 +358,27 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('a dimension of 2147483647 is not rejected as overflowing Int32', () {
+      // Kills: `value > _int32Max` -> `>=`. 2147483647 is the largest
+      // value a native Int can carry; the existing tests only passed
+      // numbers well above it, which both comparisons reject. The call
+      // still fails, because we do not have 2147483647 pixels, and the
+      // name on that error is how the two checks are told apart.
+      try {
+        resizePixels(
+          Uint8List(0),
+          srcWidth: 2147483647,
+          srcHeight: 1,
+          dstWidth: 1,
+          dstHeight: 1,
+          channels: 1,
+        );
+        fail('expected ArgumentError');
+      } on ArgumentError catch (e) {
+        expect(e.name, 'pixels.length');
+      }
+    });
   });
 
   group('encodeJpeg', () {
@@ -375,6 +421,21 @@ void main() {
         () =>
             encodeJpeg(pixels, width: 4, height: 4, channels: 3, quality: 101),
         throwsArgumentError,
+      );
+    });
+
+    test('quality 1 and 100 are legal, not off-by-one rejected', () {
+      // Kills: `quality < 1` -> `<= 1` and `quality > 100` -> `>= 100`.
+      // 0 and 101 were already covered; the documented bounds themselves
+      // were not.
+      final pixels = buildRgb(4, 4);
+      expect(
+        encodeJpeg(pixels, width: 4, height: 4, channels: 3, quality: 1),
+        isNotEmpty,
+      );
+      expect(
+        encodeJpeg(pixels, width: 4, height: 4, channels: 3, quality: 100),
+        isNotEmpty,
       );
     });
 

@@ -65,4 +65,19 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test('a 1-pixel-high source does not round the short side to zero', () {
+    // Kills: dropping `math.max(1, ...)` on the scaled dimensions.
+    // 8x1, maxDimension 1: scale is 1/8, the short side rounds to 0,
+    // and encodePng then rejects a non-positive height.
+    final png = encodePng(
+      Uint8List(8 * 1 * 3),
+      width: 8,
+      height: 1,
+      channels: 3,
+    );
+    final decoded = decodeImage(thumbnailPng(png, maxDimension: 1));
+    expect(decoded.width, greaterThanOrEqualTo(1));
+    expect(decoded.height, greaterThanOrEqualTo(1));
+  });
 }

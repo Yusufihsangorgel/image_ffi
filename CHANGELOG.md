@@ -1,3 +1,32 @@
+## 1.2.4
+
+- Declare the platforms this package actually builds and has been run on.
+  pub.dev was inferring android, ios, linux, macos and windows from `dart:io`
+  and `dart:ffi`. `hook/build.dart` is a `CBuilder.library` with two real
+  special cases: `_CRT_SECURE_NO_WARNINGS` on Windows, and linking `m` on
+  Android and Linux so `pow`/`frexp` resolve at `dlopen`. macOS and iOS are
+  not special-cased; they get math from libSystem. Fuchsia is in `OS.values`
+  and the hook does not refuse it, which is not the same as supporting it —
+  `CBuilder` has no compiler for that target, and nothing has ever built or
+  run there. Web cannot compile the shim. The `platforms:` block lists the
+  five that have been run: Linux, macOS and Windows by CI, iOS and Android
+  as Flutter apps (1.1.3). That is not a narrowing of what pub.dev showed.
+
+- A second mutation pass over the bounds, EXIF marker branches and native
+  buffer lifetimes that 1.2.3 did not cover. Thirty faults injected into
+  `lib/`, twenty-three still green, then tests for the fifteen that change
+  what the code returns or leaks. An empty APPn before EXIF, an IFD entry
+  that ends on the last byte of the segment, RST and SOS, a missing `0xFF`
+  before a marker, the four orientation transforms that share a dimension
+  with another value, quality 1 and 100, `forceChannels: 1`, `channels: 0`,
+  a dimension of exactly 2147483647, a 1-pixel-high thumbnail that would
+  round to zero, and leak tests for `encodePng` and `imageInfo`. Eight
+  remain, all equivalent, dead, or cost — the three named in 1.2.3, the
+  TIFF-header and IFD-count off-by-ones that cannot hold an orientation,
+  a four-byte file, a dead `offset + 4` check inside a loop that already
+  required it, and `allocateBytes(0)` which the public API never reaches.
+  They are named in the test file so the next audit does not chase them.
+
 ## 1.2.3
 
 - Six tests for the EXIF parser's bounds, from a mutation audit: thirteen

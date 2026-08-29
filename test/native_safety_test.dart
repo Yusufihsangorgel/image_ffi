@@ -144,8 +144,11 @@ void main() {
 
       // The encoded JPEG is the smallest of the buffers here, which is why the
       // noise band matters: ~19KB per call, so the loop has to be long enough
-      // for a lost free to clear it by an order of magnitude.
-      const iterations = 1500;
+      // for a lost free to clear it by an order of magnitude. 4000 rather than
+      // 1500 because `dart test` runs files in parallel and RSS from the rest
+      // of the suite sits around 14MB; 1500 * 19KB * 0.4 is 11MB, which that
+      // noise already exceeds.
+      const iterations = 4000;
 
       for (var i = 0; i < 200; i++) {
         encodeJpeg(small, width: 160, height: 160, channels: 3);
@@ -174,6 +177,77 @@ void main() {
         reason:
             'grew ${grownMb}MB over $iterations encodes; '
             'a lost free would cost ${leakMb}MB',
+      );
+    });
+
+    test('encodePng does not leak its native output buffer', () {
+      // Kills: skipping `imgffiFreeBuffer` in encodePng. The JPEG leak
+      // loop never calls PNG encode, so that free could vanish unnoticed.
+      // A repeating pattern compresses to a few kilobytes and encodes in
+      // well under a millisecond; random pixels would inflate both.
+      const size = 384;
+      final pixels = Uint8List(size * size * 3);
+      for (var i = 0; i < pixels.length; i++) {
+        pixels[i] = (i * 37) % 256;
+      }
+
+      const iterations = 8000;
+
+      Uint8List cycle() =>
+          encodePng(pixels, width: size, height: size, channels: 3);
+
+      for (var i = 0; i < 200; i++) {
+        cycle();
+      }
+      final before = ProcessInfo.currentRss;
+      var encodedBytes = 0;
+      for (var i = 0; i < iterations; i++) {
+        encodedBytes = cycle().length;
+      }
+      final grownMb = (ProcessInfo.currentRss - before) / (1024 * 1024);
+      final leakMb = encodedBytes * iterations / (1024 * 1024);
+
+      expect(
+        leakMb,
+        greaterThan(20),
+        reason: 'payload too small to detect a leak',
+      );
+      expect(
+        grownMb,
+        lessThan(leakMb * 0.4),
+        reason:
+            'grew ${grownMb}MB over $iterations PNG encodes; '
+            'a lost free would cost ${leakMb}MB',
+      );
+    });
+
+    test('imageInfo does not leak its native input copy', () {
+      // Kills: skipping `freeBytes` of the input copy in imageInfo.
+      // decodeImage's leak test does not call imageInfo.
+      final png = _noisePng(192);
+      const iterations = 1500;
+      final leakMb = png.length * iterations / (1024 * 1024);
+
+      for (var i = 0; i < 200; i++) {
+        imageInfo(png);
+      }
+      final before = ProcessInfo.currentRss;
+      for (var i = 0; i < iterations; i++) {
+        imageInfo(png);
+      }
+      final grownMb = (ProcessInfo.currentRss - before) / (1024 * 1024);
+
+      expect(
+        leakMb,
+        greaterThan(20),
+        reason: 'payload too small to detect a leak',
+      );
+      expect(
+        grownMb,
+        lessThan(leakMb * 0.4),
+        reason:
+            'grew ${grownMb}MB over $iterations imageInfo calls; '
+            'the native copy of the encoded bytes is ${leakMb}MB',
       );
     });
 

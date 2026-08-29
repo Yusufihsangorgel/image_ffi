@@ -68,7 +68,7 @@ wrong does not throw.
 `thumbnailJpeg` and `thumbnailPng` default `applyOrientation: true`.
 `exifOrientation` reads a JPEG tag (1–8) and returns 1 if missing, malformed,
 or not JPEG. `applyExifOrientation` treats a value outside 1–8 as 1. Phone JPEG
-tagged 6: `decodeImage` is 400x300, `thumbnailJpeg` is 96x128, with
+tagged 6: `decodeImage` is 400x300, `thumbnailJpeg` is 96x128; with
 `applyOrientation: false` it is 128x96 (`example/upright_thumbnails.dart`).
 The async thumbnail functions always apply orientation (no parameter).
 
@@ -82,68 +82,38 @@ throw `ArgumentError`.
 
 ## Mistakes
 
-Decode a JPEG (3 channels) then `resizePixels` without `channels` (default 4):
-
-```
-Invalid argument (pixels.length): must equal srcWidth * srcHeight * channels (256): 192
-```
-
+8x8 JPEG (3 channels) then `resizePixels` without `channels` (default 4):
+`Invalid argument (pixels.length): must equal srcWidth * srcHeight * channels (256): 192`
 Same trap: `encodePng` default 4 on JPEG pixels; `encodeJpeg` default 3 on RGBA
 (256 vs 192, reversed). Fix: `channels: image.channels`.
 
 `forceChannels: 0` meaning "native":
-
-```
-Invalid argument (forceChannels): must be between 1 and 4: 0
-```
-
+`Invalid argument (forceChannels): must be between 1 and 4: 0`
 Fix: omit `forceChannels`.
 
 Empty buffer:
-
-```
-Invalid argument (bytes): must not be empty: _Uint8List
-```
+`Invalid argument (bytes): must not be empty: _Uint8List`
 
 Bytes that are not an image:
-
-```
-ImageFfiException: unknown image type
-```
+`ImageFfiException: unknown image type`
 
 `quality: 0` (or 101):
-
-```
-Invalid argument (quality): must be between 1 and 100: 0
-```
+`Invalid argument (quality): must be between 1 and 100: 0`
 
 `maxDimension: 0` or `dstWidth: 0`:
-
-```
-Invalid argument (maxDimension): must be positive: 0
-Invalid argument (dstWidth): must be positive: 0
-```
+`Invalid argument (maxDimension): must be positive: 0`
+`Invalid argument (dstWidth): must be positive: 0`
 
 A resize dimension above `Int32`:
-
-```
-Invalid argument (dstWidth): must not exceed 2147483647, the largest value a native Int parameter can carry without truncating: 4294967396
-```
+`Invalid argument (dstWidth): must not exceed 2147483647, the largest value a native Int parameter can carry without truncating: 4294967396`
 
 `dart compile exe` on a program that depends on this package:
-
-```
-'dart compile' does not support build hooks, use 'dart build' instead.
-```
-
+`'dart compile' does not support build hooks, use 'dart build' instead.`
 Fix: `dart build cli` and ship the whole `bundle/`. The binary alone fails with
 `Failed to load dynamic library '../lib/libimage_ffi_shim.dylib'`.
 
 `thumbnailJpegBatch(..., concurrency: 0)`:
-
-```
-Invalid argument (concurrency): must be positive: 0
-```
+`Invalid argument (concurrency): must be positive: 0`
 
 ## Layout
 

@@ -1,17 +1,12 @@
 // The bounds checks in the EXIF parser, tested at the boundary.
 //
-// These came out of a mutation audit: thirteen deliberate faults injected into
-// lib/, thirteen test runs, six of them still green. Five of the six were in
-// exif.dart, and every one was an off-by-one in a bounds check -- the loop
-// bound, the segment-end check, the tag-prefix check.
-//
-// That matters more here than it would elsewhere. This parser reads bytes out
-// of a photograph somebody uploaded, so an off-by-one is not a cosmetic bug;
-// it is a read past the end of an attacker-shaped buffer. The existing tests
-// covered orientations that work, which is the comfortable input.
-//
-// Each test below names the mutation it kills, so a future reader can see why
-// the fixture is shaped the way it is rather than tidying the awkwardness away.
+// These came out of mutation audits. The first put thirteen deliberate faults
+// into lib/ and left six still green; three of those are caught below (the
+// big-endian TIFF branch, a segment ending on the last byte, an IFD loop
+// reading past its count). A second pass covered the remaining bounds, the
+// JPEG marker branches, and the native buffer frees. Each test names the
+// mutation it kills, so a future reader can see why the fixture is shaped
+// the way it is rather than tidying the awkwardness away.
 import 'dart:typed_data';
 
 import 'package:image_ffi/image_ffi.dart';
@@ -27,6 +22,8 @@ Uint8List jpegWithOrientation(
   Endian endian = Endian.little,
   List<int> trailing = const [],
   int entryCount = 1,
+  List<int> afterSoi = const [],
+  bool nextIfd = true,
 }) {
   final tiff = BytesBuilder();
   final marker = endian == Endian.little ? 0x49 : 0x4D;
@@ -50,7 +47,9 @@ Uint8List jpegWithOrientation(
   u32(1); // One value.
   u16(orientation); // Stored inline...
   u16(0); // ...in the first half of a four-byte field.
-  u32(0); // Next-IFD pointer: none.
+  if (nextIfd) {
+    u32(0); // Next-IFD pointer: none.
+  }
 
   final tiffBytes = tiff.toBytes();
   final body = <int>[...'Exif\x00\x00'.codeUnits, ...tiffBytes];
@@ -59,6 +58,7 @@ Uint8List jpegWithOrientation(
 
   return Uint8List.fromList([
     0xFF, 0xD8, // SOI
+    ...afterSoi,
     0xFF, 0xE1, // APP1
     (segmentLength >> 8) & 0xFF, segmentLength & 0xFF,
     ...body,
@@ -123,18 +123,75 @@ void main() {
       }
     });
 
-    // Two mutants from the same audit are still alive and are meant to be.
+    test('skips an empty APPn and still reads the EXIF that follows', () {
+      // Kills: exif.dart  `segmentLength < 2` -> `<= 2`.
+      // Length 2 is a legal empty segment (the length field counts itself
+      // and nothing else). Treating it as malformed gives up before APP1.
+      final jpeg = jpegWithOrientation(6, afterSoi: [0xFF, 0xE0, 0x00, 0x02]);
+      expect(exifOrientation(jpeg), 6);
+    });
+
+    test('reads an IFD entry that ends on the last byte of the segment', () {
+      // Kills: exif.dart  `entry + 12 > limit` -> `>=`.
+      // The next-IFD pointer is optional for this parser: it never reads it.
+      // Without those four bytes the 12-byte orientation entry ends exactly
+      // at `limit`, which `>` accepts and `>=` does not.
+      expect(exifOrientation(jpegWithOrientation(6, nextIfd: false)), 6);
+    });
+
+    test('a restart marker before APP1 is skipped, not read as a length', () {
+      // Kills: dropping the RST range (0xD0..0xD7) from the standalone
+      // markers. RST0 is two bytes with no length; treating it as
+      // length-bearing consumes 0xFFE1 from the APP1 that follows and
+      // the orientation is lost.
+      final jpeg = jpegWithOrientation(6, afterSoi: [0xFF, 0xD0]);
+      expect(exifOrientation(jpeg), 6);
+    });
+
+    test('stops at SOS, even if an APP1 follows the scan header', () {
+      // Kills: dropping 0xDA from `marker == 0xDA || marker == 0xD9`.
+      // EXIF cannot live after start-of-scan. A planted APP1 there is
+      // entropy, not a tag, and must not be read as orientation 6.
+      final jpeg = jpegWithOrientation(6, afterSoi: [0xFF, 0xDA, 0x00, 0x02]);
+      expect(exifOrientation(jpeg), 1);
+    });
+
+    test('a missing 0xFF before a marker is not walked as APP1', () {
+      // Kills: dropping `bytes[offset] != 0xFF`. The SOI is intact, but
+      // the next byte is 0x00 rather than 0xFF; the E1 that follows is
+      // the APP1 marker byte sitting one off. Giving up returns 1.
+      // Continuing would treat E1 as the marker and report 6.
+      final inner = jpegWithOrientation(6);
+      inner[2] = 0x00;
+      expect(exifOrientation(inner), 1);
+    });
+
+    // Mutants from the two audits that are still alive and are meant to be.
     //
-    //   exif.dart:22  `offset + 4 <= bytes.length` -> `<`
-    //   exif.dart:98  `offset + tag.length > bytes.length` -> `>=`
+    //   exif.dart  `offset + 4 <= bytes.length` -> `<`
+    //   exif.dart  `offset + tag.length > bytes.length` -> `>=`
+    //   exif.dart  `bytes.length < 4` -> `<= 4`
     //
-    // Both only behave differently when the buffer ends exactly on the bound,
-    // and in both cases there is no room left for anything the parser could
-    // report: four remaining bytes cannot hold an EXIF segment, and an "Exif"
-    // marker ending at EOF is followed by no TIFF. Correct and mutant return
-    // 1 for every input that reaches them. They are equivalent mutants, and a
-    // test written to kill one would assert something that is not true.
-    // Recorded here so the next audit does not spend an afternoon on it.
+    // All three only behave differently when the buffer ends exactly on the
+    // bound, and in each case there is no room left for anything the parser
+    // could report: four remaining bytes cannot hold an EXIF segment, an
+    // "Exif" marker ending at EOF is followed by no TIFF, and a four-byte
+    // file is SOI plus two bytes. Correct and mutant return 1. A test
+    // written to kill one would assert something that is not true.
+    //
+    //   exif.dart  `tiffStart + 8 > limit` -> `>=`
+    //   exif.dart  `ifd + 2 > limit` -> `>=`
+    //
+    // Same shape: the bound that would distinguish them is an 8-byte TIFF
+    // header with no IFD, or an IFD whose count sits on the last two bytes
+    // with no entries after it. Neither can carry an orientation, so both
+    // sides return 1.
+    //
+    //   exif.dart  `if (offset + 4 > bytes.length) return 1`
+    //
+    // Dead. The loop already entered on `offset + 4 <= bytes.length` and
+    // offset has not moved. Recorded here so the next audit does not
+    // chase them.
 
     test('every orientation outside 1..8 is treated as no rotation', () {
       // The doc promises this range. 0 and 9 are the values either side.

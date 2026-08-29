@@ -111,6 +111,35 @@ void main() {
       expect(identical(applyExifOrientation(image, 0), image), isTrue);
       expect(identical(applyExifOrientation(image, 9), image), isTrue);
     });
+
+    test(
+      'each of the eight orientations maps pixels to the documented place',
+      () {
+        // Kills swapping 3 for 4 or 6 for 5: both pairs share dimensions
+        // (3/4 keep them, 5/6 swap them) and the size-only tests could not
+        // tell the transforms apart.
+        final source = DecodedImage(
+          width: 2,
+          height: 2,
+          channels: 1,
+          pixels: Uint8List.fromList([10, 20, 30, 40]),
+        );
+        const expected = <int, List<int>>{
+          1: [10, 20, 30, 40],
+          2: [20, 10, 40, 30],
+          3: [40, 30, 20, 10],
+          4: [30, 40, 10, 20],
+          5: [10, 30, 20, 40],
+          6: [30, 10, 40, 20],
+          7: [40, 20, 30, 10],
+          8: [20, 40, 10, 30],
+        };
+        for (final entry in expected.entries) {
+          final got = applyExifOrientation(source, entry.key);
+          expect(got.pixels, entry.value, reason: 'orientation ${entry.key}');
+        }
+      },
+    );
   });
 
   group('thumbnails', () {
