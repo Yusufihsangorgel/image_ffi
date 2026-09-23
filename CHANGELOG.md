@@ -1,3 +1,10 @@
+## 1.2.6
+
+- The build hook returns early when a build does not request code assets.
+  It read the target OS for the image shim build first, and that setting
+  exists only in code-asset builds; any other build failed inside the hook.
+  A new test runs the hook with no asset types requested.
+
 ## 1.2.5
 
 - Support `code_assets` 2.x. The build hook now uses its native-library header
