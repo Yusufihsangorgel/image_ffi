@@ -1,17 +1,14 @@
 name: image_ffi
-description: >-
-  Fast native image resize, thumbnail and JPEG/PNG encode for Dart over FFI.
-  Several times quicker than the pure-Dart image package; stb-backed, no
-  prebuilt binary.
+description: "Resize images, create thumbnails and encode JPEG or PNG in Dart via native FFI. Uses stb; no prebuilt binaries."
 version: 1.2.6
 repository: https://github.com/Yusufihsangorgel/image_ffi
 
 topics:
-  - image
-  - resize
-  - jpeg
-  - thumbnail
-  - ffi
+  - image-resize
+  - image-thumbnail
+  - jpeg-encoder
+  - png-encoder
+  - stb
 
 screenshots:
   - description: "Median milliseconds to decode, resize and encode a 2000x2000 image: the full thumbnail pipeline takes 27.3 ms against the pure-Dart image package's 141.7."
