@@ -121,3 +121,7 @@ Fix: `dart build cli` and ship the whole `bundle/`. The binary alone fails with
 - `hook/build.dart` — `CBuilder.library(name: 'image_ffi_shim')` compiles `src/image_ffi_shim.c` with includes `src/third_party/stb` and `src`. Asset id is `src/bindings.dart`. Links `m` on Android and Linux.
 - `example/`, `test/`, `bench/bench.dart`.
 - Tests: `dart test`. Analyze: `dart analyze --fatal-infos`. Format: `dart format --output=none --set-exit-if-changed .`. First run compiles the native library (C toolchain required). Public API must have dartdoc (`public_member_api_docs`).
+
+## Contributing
+
+Before changing this repository, read [CONTRIBUTING.md](CONTRIBUTING.md), [package engineering rules](docs/engineering/package.md), and the [debt register](docs/engineering/debt.json). These requirements apply to every contributor. The usage guidance above remains the consumer contract.

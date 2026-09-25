@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "package": "image_ffi",
+  "survey_digest": "f90f45c8a172068c3ed3b9488ba5a7cb4e58efa93c380d2d9a70b399349ec35e",
+  "items": [
+    {
+      "id": "image_ffi-D001",
+      "source_index": 1,
+      "source_item_digest": "ffc5e7dec6cf228f3940a8349504287eb5ccad88afb193e3c614251078b687f0",
+      "baseline_revision": "aea46b7",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/image_ffi_base.dart",
+          "lines": "400-427"
+        }
+      ],
+      "kind": "duplicated logic",
+      "observation": "thumbnailJpeg and thumbnailPng repeat the decode + orientation + scaling block verbatim (about 28 lines). The quality validation is written twice; the length check inside resizePixels duplicates `_checkPixelLength`.",
+      "certainty": "confirmed",
+      "proposed_fix": "A private `_decodeFitted(imageBytes, maxDimension, applyOrientation)` helper + `_checkQuality`; resizePixels uses a `_checkPixelLength` that takes the parameter names. The existing tests must pass unchanged.",
+      "related_rule_ids": [
+        "image_ffi/IF-02"
+      ],
+      "issue_url": null,
+      "closure_criteria": "thumbnailJpeg and thumbnailPng share one private _decodeFitted helper, quality is checked in a single _checkQuality and resizePixels reuses a parameter-aware _checkPixelLength. The existing tests pass unchanged.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "image_ffi-D002",
+      "source_index": 2,
+      "source_item_digest": "26eb9b535f75942059a7cb380f79a33f6c6814dae0f3b3c33484ccbbba317787",
+      "baseline_revision": "aea46b7",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/image_ffi_base.dart",
+          "lines": "540-555,641-667"
+        }
+      ],
+      "kind": "API inconsistency",
+      "observation": "thumbnailJpegAsync, thumbnailPngAsync, thumbnailJpegBatch and thumbnailPngBatch do not take `applyOrientation`; their sync counterparts do. The dartdoc says 'See [thumbnailJpeg] for the parameters' (lines 537-538).",
+      "certainty": "confirmed",
+      "proposed_fix": "Add an optional `applyOrientation = true` parameter and pass it through (not breaking); a test with `applyOrientation: false` for async and batch.",
+      "related_rule_ids": [
+        "image_ffi/IF-06"
+      ],
+      "issue_url": null,
+      "closure_criteria": "thumbnailJpegAsync, thumbnailPngAsync, thumbnailJpegBatch and thumbnailPngBatch accept applyOrientation defaulting to true and pass it to the sync functions. A test exercises applyOrientation: false on the async and batch paths.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "image_ffi-D003",
+      "source_index": 3,
+      "source_item_digest": "651e88b55fce1da04f84ae39f4d5b7d202face5b75b87618ed1ba8bb0ac1988e",
+      "baseline_revision": "aea46b7",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/image_ffi_base.dart",
+          "lines": "9"
+        },
+        {
+          "path": "lib/src/exif.dart",
+          "lines": "3"
+        }
+      ],
+      "kind": "import cycle",
+      "observation": "exif imports base only for `DecodedImage`; base imports exif for the thumbnail.",
+      "certainty": "confirmed",
+      "proposed_fix": "Move `DecodedImage` to `lib/src/decoded_image.dart`; base and exif import it, the export line is updated, and the API does not change.",
+      "related_rule_ids": [
+        "image_ffi/IF-01"
+      ],
+      "issue_url": null,
+      "closure_criteria": "DecodedImage is defined in lib/src/decoded_image.dart and image_ffi_base.dart and exif.dart import it from there. The export line in lib/image_ffi.dart keeps the same public names.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "image_ffi-D004",
+      "source_index": 4,
+      "source_item_digest": "da523796e3718a5990062147cca8400deab51df0da0ff13d2b09ffa57f90dec1",
+      "baseline_revision": "aea46b7",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/image_ffi_base.dart",
+          "lines": "39-46"
+        }
+      ],
+      "kind": "unenforced precondition",
+      "observation": "The DecodedImage ctor dartdoc says `pixels.length == width*height*channels` but does not validate it; `applyExifOrientation` relies on it (exif.dart:60-87).",
+      "certainty": "confirmed",
+      "proposed_fix": "Add an assert to the ctor + a debug test (release behavior unchanged).",
+      "related_rule_ids": [],
+      "issue_url": null,
+      "closure_criteria": "The DecodedImage constructor asserts pixels.length == width * height * channels. A debug test constructs an invalid DecodedImage and expects the assert to fire.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "image_ffi-D005",
+      "source_index": 5,
+      "source_item_digest": "6f07ccafb88b94063038ab64d7266cd4ee32e6e3cebe22613ac2be8b4de68c17",
+      "baseline_revision": "aea46b7",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/image_ffi_base.dart",
+          "lines": "301-307,350-353"
+        }
+      ],
+      "kind": "inconsistent validation",
+      "observation": "encodeJpeg and encodePng do not pass width/height through `_checkInt32`; resizePixels does. In practice it requires a 2 GiB pixel buffer.",
+      "certainty": "confirmed",
+      "proposed_fix": "Add the same check.",
+      "related_rule_ids": [
+        "image_ffi/IF-02"
+      ],
+      "issue_url": null,
+      "closure_criteria": "encodeJpeg and encodePng pass width and height through _checkInt32 before the native call, matching resizePixels.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "image_ffi-D006",
+      "source_index": 6,
+      "source_item_digest": "18f4dd29a301921b6172f1398a25a3c5266cbebb40aa5eb454487f0206bb2aa6",
+      "baseline_revision": "aea46b7",
+      "status": "open",
+      "size": "medium",
+      "locations": [
+        {
+          "path": "lib/src/image_ffi_base.dart",
+          "lines": "163"
+        }
+      ],
+      "kind": "evolvability (design debt)",
+      "observation": "imageInfo returns a record in the public API; adding a field is breaking. The other value types are final classes.",
+      "certainty": "confirmed",
+      "proposed_fix": "Enter it in the debt register; in the next major, move `ImageInfo` to a final class or add a new API that keeps the record.",
+      "related_rule_ids": [],
+      "issue_url": null,
+      "closure_criteria": "The record return type of imageInfo is tracked in the debt register. A later major version ships ImageInfo as a final class or adds a new API that keeps the record.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    }
+  ]
+}
