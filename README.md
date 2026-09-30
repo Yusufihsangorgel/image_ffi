@@ -19,29 +19,45 @@ against `package:image` on the same input](https://raw.githubusercontent.com/Yus
 
 ## Why this instead of what you already have
 
-**Instead of `package:image`.** There is no capability gap here: both decode,
-resize, and re-encode PNG and JPEG. The difference is time. `bench/bench.dart`
-synthesizes a 2000x2000 PNG, decodes it, resizes the longer side to 256 px,
-and re-encodes, timing both libraries on the same bytes. The last run on an
-Apple M-series laptop: decode 21.9 ms against 94.5, resize 4.8 ms against
-44.0, and 27.3 ms against 141.7 for the whole pipeline. Run
-`dart run bench/bench.dart` and get your own numbers.
+The alternative to weigh is the pure-Dart [`image`](https://pub.dev/packages/image)
+package. For decode, resize and PNG/JPEG encode both do the job. The choice
+comes down to speed, reach and how much else you need.
+
+**Choose `image_ffi` when**
+
+- Resize is in your latency or throughput budget, on a server or in a batch job.
+  `bench/bench.dart` synthesizes a 2000x2000 PNG, decodes it, resizes the longer
+  side to 256 px and re-encodes, timing both libraries on the same bytes. The
+  last run on an Apple M-series laptop: decode 21.9 ms against 94.5, resize
+  4.8 ms against 44.0, and 27.3 ms against 141.7 for the whole pipeline. Run
+  `dart run bench/bench.dart` and get your own numbers.
+- You thumbnail a whole folder. `thumbnailJpegBatch` and `thumbnailPngBatch`
+  run the work off the calling isolate and cap how many isolates are live.
+- You want downscales that do not go dark. `resizePixels` resamples in linear
+  light by default, and `copyResize` in `package:image` takes no colour-space
+  argument.
+
+**Choose `package:image` when**
+
+- You target the web, or any place without a C compiler and native assets. This
+  package cannot build there. `image` is pure Dart and its README lists web apps
+  as a target.
+- You need more than decode, resize and JPEG/PNG encode. `image` also writes
+  GIF, BMP, TIFF, TGA, ICO and lossless WebP, and has drawing, text and filters
+  that this package has no answer for.
+- You want no C toolchain and no build hook, or you process so few images that
+  the time does not show.
+
+Two things are not reasons to switch. Both libraries can hand you an upright
+thumbnail from a phone JPEG, because the JPEG decoder in `image` applies the
+EXIF orientation while it decodes. Here `thumbnailJpeg` does it by default and
+`applyOrientation: false` turns it off. An offline build does not favour either
+one, because `image` has no native step to build.
 
 **Building offline.** This package's `hook/build.dart` makes no network calls.
 It compiles the vendored stb sources locally through `CBuilder`, which means an
 offline CI runner still ends up with a working library and there is no prebuilt
 binary to trust.
-
-**Reach for it when**
-
-- You generate thumbnails on a server and the resize step is in your latency budget.
-- You process images in a batch job where throughput per core matters.
-- Your CI has no outbound network and every native dependency must build from source.
-
-**Skip it** if you need anything past decode, resize, and JPEG/PNG encode:
-`package:image` writes WebP, TIFF, GIF, and ICO as well (see its
-`lib/src/formats/`), and ships drawing, filters, and font rendering that this
-package has no answer for.
 
 ## Formats
 
@@ -220,8 +236,9 @@ final thumb = await thumbnailJpegAsync(bytes, maxDimension: 256);
 ```
 
 This is the reason to reach for a native writer in a Flutter app: the pure-Dart
-`image` package runs on the calling isolate and janks the UI while a big photo
-is processed, and a plain synchronous FFI call does the same. The async variants
+`image` package's plain functions run on the calling isolate and jank the UI
+while a big photo is processed (its `Command` API can run the work on an
+isolate), and a plain synchronous FFI call does the same. The async variants
 keep the UI isolate free. The input bytes are copied to the worker and the
 result copied back; for a handful of images that copy is small next to the
 decode. An `ImageFfiException` raised in the worker surfaces from the future.

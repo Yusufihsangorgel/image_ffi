@@ -1,5 +1,10 @@
 ## 1.2.7
 
+- README: the comparison section now says when `package:image` is the better
+  choice (web, more formats and editing, no C toolchain) next to when this
+  package is, and no longer lists an offline build as a reason to pick this
+  package. The isolate paragraph notes that `image` has a `Command` API that
+  can run on an isolate.
 - README: the offline-build paragraph now describes only this package's build
   hook, which compiles the vendored stb sources locally with no network calls.
   It no longer makes claims about another package.
