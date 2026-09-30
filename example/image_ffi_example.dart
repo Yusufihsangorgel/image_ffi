@@ -52,8 +52,8 @@ void main(List<String> args) {
     '${bytes.length} bytes',
   );
 
-  // Decode, downscale so the longer side is at most 256px, and JPEG-encode,
-  // all in one native call.
+  // Decode, downscale so the longer side is at most 256px, and JPEG-encode.
+  // One Dart call, made of separate native calls for each step.
   final thumbnail = thumbnailJpeg(bytes, maxDimension: 256, quality: 85);
   final thumbInfo = imageInfo(thumbnail);
 

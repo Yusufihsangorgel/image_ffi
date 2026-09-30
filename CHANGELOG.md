@@ -11,6 +11,8 @@
   not measure.
 - Example README: thumbnailing is one Dart call that makes separate native
   calls for decode, resize and encode, not one native call.
+- Example code comment and `thumbnailJpeg` dartdoc say the same, and the async
+  dartdocs note that they have no `applyOrientation` argument.
 
 ## 1.2.6
 

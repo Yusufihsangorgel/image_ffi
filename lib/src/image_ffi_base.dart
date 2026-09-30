@@ -373,8 +373,9 @@ Uint8List encodePng(
 /// Decodes an image, downscales it so its longer side is at most
 /// [maxDimension], and JPEG-encodes the result, all in one call.
 ///
-/// This is the fast path for thumbnails: decode, aspect-preserving resize and
-/// encode happen natively with a single copy back into Dart. The aspect ratio
+/// This is the fast path for thumbnails. One Dart call runs the decode, the
+/// aspect-preserving resize and the encode natively, as separate native calls
+/// with the pixels held in Dart between them. The aspect ratio
 /// is preserved and the image is never enlarged, so an image already within
 /// [maxDimension] is only re-encoded at [quality]. Four-channel images encode
 /// as JPEG with alpha dropped.
@@ -535,7 +536,8 @@ void _checkPixelLength(Uint8List pixels, int width, int height, int channels) {
 ///
 /// [imageBytes] is copied to the worker isolate and the JPEG is copied back;
 /// for a handful of images that copy is small next to the decode itself. See
-/// [thumbnailJpeg] for the parameters; an [ImageFfiException] raised in the
+/// [thumbnailJpeg] for the parameters. This function has no `applyOrientation`
+/// and always applies the EXIF tag. An [ImageFfiException] raised in the
 /// worker surfaces from the returned future.
 Future<Uint8List> thumbnailJpegAsync(
   Uint8List imageBytes, {
@@ -546,7 +548,8 @@ Future<Uint8List> thumbnailJpegAsync(
 );
 
 /// The off-main-isolate version of [thumbnailPng]; see [thumbnailJpegAsync] for
-/// how the work is offloaded and [thumbnailPng] for the parameters. Use this
+/// how the work is offloaded and [thumbnailPng] for the parameters. This
+/// function has no `applyOrientation` and always applies the EXIF tag. Use this
 /// when the source has transparency to preserve, since PNG keeps the alpha
 /// channel a JPEG thumbnail would drop.
 Future<Uint8List> thumbnailPngAsync(
