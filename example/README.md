@@ -27,8 +27,9 @@ land. Off the main isolate the clock keeps its cadence.
 
 So: `thumbnailJpeg` in a script or a server handler, where blocking the isolate
 is what you want. `thumbnailJpegAsync` anywhere a person is looking at the
-screen. Both take the same arguments; the async ones copy the bytes to a worker
-isolate and the result back, which is small next to the decode.
+screen. Both take `maxDimension` and `quality`. The async ones have no
+`applyOrientation` parameter and always apply the EXIF tag. They copy the bytes
+to a worker isolate and the result back, which is small next to the decode.
 
 ## The basics on a file of your own
 
@@ -45,13 +46,14 @@ cheap way to check a size or reject an upload before committing to a decode.
 |                       | what it does                                    |
 | --------------------- | ----------------------------------------------- |
 | `imageInfo`           | width, height and channels from the header only |
-| `thumbnailJpeg/Png`   | decode, downscale and encode in one native call |
+| `thumbnailJpeg/Png`   | decode, downscale and encode in one Dart call   |
 | `decodeImage`         | pixels, when you need them yourself             |
 | `resizePixels`        | downscale pixels you already hold               |
 | `encodeJpeg/encodePng`| pixels back out to a file format                |
 
-The thumbnail calls exist because the three-step version crosses the FFI
-boundary three times and holds the full-size pixel buffer in Dart in between.
+The thumbnail calls exist so you do not write the three steps yourself. They
+also read the EXIF orientation and never enlarge the image. Underneath they make
+the same separate native calls as the pieces for decode, resize and encode.
 Reach for the pieces when you need something in the middle, and for
 `thumbnail...` when you do not.
 

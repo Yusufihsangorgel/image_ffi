@@ -1,3 +1,17 @@
+## 1.2.7
+
+- README: the offline-build paragraph now describes only this package's build
+  hook, which compiles the vendored stb sources locally with no network calls.
+  It no longer makes claims about another package.
+- README and example README: the async thumbnail functions do not take
+  `applyOrientation` and always apply the EXIF tag. Both files said they took
+  the same arguments as the synchronous ones.
+- README: the introduction quotes the same benchmark numbers as the table, and
+  the benchmark section no longer quotes a timing that `bench/bench.dart` does
+  not measure.
+- Example README: thumbnailing is one Dart call that makes separate native
+  calls for decode, resize and encode, not one native call.
+
 ## 1.2.6
 
 - The build hook returns early when a build does not request code assets.

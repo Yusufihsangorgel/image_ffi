@@ -23,19 +23,14 @@ against `package:image` on the same input](https://raw.githubusercontent.com/Yus
 resize, and re-encode PNG and JPEG. The difference is time. `bench/bench.dart`
 synthesizes a 2000x2000 PNG, decodes it, resizes the longer side to 256 px,
 and re-encodes, timing both libraries on the same bytes. The last run on an
-M4 Pro: decode 23.7 ms against 99.4, resize 5.1 ms against 47.1, and 29.5 ms
-against 150.2 for the whole pipeline. Run `dart run bench/bench.dart` and get
-your own numbers.
+Apple M-series laptop: decode 21.9 ms against 94.5, resize 4.8 ms against
+44.0, and 27.3 ms against 141.7 for the whole pipeline. Run
+`dart run bench/bench.dart` and get your own numbers.
 
-**Instead of `pixer`.** Pixer is the closest native competitor and it is
-carefully built, but its build hook pulls a prebuilt binary over the network:
-`downloadUri` returns
-`https://github.com/hawkkiller/pixer/releases/download/$version/$target`
-(`lib/src/hook/download_asset.dart:9`). The download is hash-verified, but you
-still need the network at build time, and you run a binary you did not
-compile. This package's `hook/build.dart` makes no network calls; it compiles
-the vendored `stb_image` and `stb_image_write` sources locally through
-`CBuilder`, so an offline CI runner still ends up with a working library.
+**Building offline.** This package's `hook/build.dart` makes no network calls.
+It compiles the vendored stb sources locally through `CBuilder`, which means an
+offline CI runner still ends up with a working library and there is no prebuilt
+binary to trust.
 
 **Reach for it when**
 
@@ -128,9 +123,10 @@ thumbnailJpeg              96x128     upright, nothing asked for
 applyExifOrientation       300x400    same result, by hand
 ```
 
-Pass `applyOrientation: false` when you want the sensor framing, and reach for
-`exifOrientation` and `applyExifOrientation` when you decode and resize
-yourself:
+Pass `applyOrientation: false` to `thumbnailJpeg` or `thumbnailPng` when you
+want the sensor framing. The async and batch variants have no such parameter and
+always apply the tag. Reach for `exifOrientation` and `applyExifOrientation`
+when you decode and resize yourself:
 
 ```dart
 final image = decodeImage(photoBytes);
@@ -179,9 +175,9 @@ an Apple M-series laptop:
 
 The resize row uses cubic interpolation for the `image` package so both sides do
 a comparable high-quality filter. The `image` package's default nearest-neighbor
-resize is faster than either (about 0.4 ms here) at much lower quality;
-measuring against that would not be like-for-like. Numbers are
-machine-dependent; reproduce them with `dart run bench/bench.dart`.
+resize is faster than either, at much lower quality. Measuring against that
+would not be like-for-like. Numbers are machine-dependent. Reproduce them
+with `dart run bench/bench.dart`.
 
 ## API
 
@@ -204,8 +200,10 @@ machine-dependent; reproduce them with `dart run bench/bench.dart`.
   photos upright; see above. `thumbnailPng(bytes, {maxDimension,
   applyOrientation})` does the same but PNG-encodes, keeping the alpha channel a
   JPEG would drop.
-- `thumbnailJpegAsync` and `thumbnailPngAsync` take the same arguments and
-  return a `Future`; see below.
+- `thumbnailJpegAsync(bytes, {maxDimension, quality})` and
+  `thumbnailPngAsync(bytes, {maxDimension})` return a `Future`. They take the
+  same arguments as the synchronous calls except `applyOrientation`, which they
+  do not expose: they always apply the EXIF tag. See below.
 - `thumbnailJpegBatch(images, {maxDimension, quality, concurrency})` and
   `thumbnailPngBatch(images, {maxDimension, concurrency})` thumbnail a whole
   folder off the main isolate while capping how many isolates run at once; see
