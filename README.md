@@ -308,13 +308,17 @@ Dart 3.11.
 
 ## Platforms
 
-`pubspec.yaml` lists android, ios, linux, macos and windows. Those are the
-targets the hook is written for and that have been run. Linux, macOS and
-Windows are the CI matrix (`dart test` on Ubuntu, macOS and Windows). iOS
-and Android were run as Flutter apps, because a green build does not prove
-the library loads: a 2x2 PNG round-trip at startup returns `2x2` on an
-iPhone 17 Pro simulator running iOS 26.5 and on an Android 15 arm64
-emulator (API 35), and the same on macOS desktop.
+`pubspec.yaml` lists android, ios, linux, macos and windows. The Dart VM tests
+run in CI on Ubuntu, macOS and Windows. A second workflow
+(`.github/workflows/flutter-compat.yaml`) builds a generated Flutter app on
+every stable line from 3.38 to 3.50. The app decodes a bundled PNG, checks its
+size, channel count and one pixel, and makes a JPEG thumbnail of a known size.
+It does so on Linux, on x86_64 Android emulators at API 24 and 36, and on an
+iOS simulator on an arm64 macOS runner (iPhone 16, iOS 18.5, Xcode 16.4). The
+emulator and simulator jobs use Flutter 3.38.10 and 3.50.0. The release APK is
+checked for 16 KB aligned LOAD segments on armeabi-v7a, arm64-v8a and x86_64.
+Physical devices, arm64 Android, Android with 16 KB pages, and Flutter apps on
+macOS or Windows are not run in CI.
 
 Web is not listed. There is no C compiler and no native assets. Fuchsia is
 a `CBuilder` OS the hook does not refuse; that is not support, and nothing

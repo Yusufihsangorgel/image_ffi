@@ -24,6 +24,12 @@
 - The package archive no longer contains `gradient.thumb.jpg`, the image that
   `example/image_ffi_example.dart` writes when it runs. `.gitignore` now lists
   `*.thumb.jpg`.
+- README: the platforms section reports only what CI runs. A generated Flutter
+  app decodes a PNG and makes a JPEG thumbnail on Linux, on Android emulators
+  at API 24 and 36, and on an iOS simulator. The description of a manual run on
+  one simulator and one emulator is removed.
+- The comment above `platforms:` in the pubspec names the CI runs that back the
+  five declared platforms.
 
 ## 1.2.6
 

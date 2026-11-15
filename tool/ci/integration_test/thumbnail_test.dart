@@ -1,7 +1,10 @@
 // Runs inside the app the compat workflow generates, not in this package:
 // flutter_test and integration_test resolve there. tool/ci/prepare_app.dart
-// copies it and its fixture to the app.
+// copies it and its fixture to the app. The same file runs on Linux, an Android
+// emulator and an iOS simulator. The fixture comes from the asset bundle and
+// nothing here depends on the host platform.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_ffi/image_ffi.dart';
@@ -27,6 +30,11 @@ void main() {
     final info = imageInfo(thumb);
     expect(info.width, 48);
     expect(info.height, 32);
+    debugPrint(
+      'decoded ${image.width}x${image.height} with ${image.channels} '
+      'channels, thumbnail ${info.width}x${info.height} in '
+      '${thumb.length} bytes',
+    );
   });
 
   test('rejects garbage with ImageFfiException', () {

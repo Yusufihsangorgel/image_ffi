@@ -23,8 +23,9 @@ screenshots:
 environment:
   sdk: ^3.10.0
 
-# Declared rather than inferred. CI: linux, macos, windows. Flutter runs:
-# android, ios. Not web, not fuchsia. See CHANGELOG 1.2.4.
+# Android and iOS run the on-device test on an emulator and a simulator in
+# flutter-compat.yaml. Linux, macOS and Windows run the Dart VM tests. The
+# package uses dart:ffi and does not run on the web.
 platforms:
   android:
   ios:
