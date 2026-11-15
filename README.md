@@ -8,11 +8,11 @@ build hook compiles the stb sources at build time: there is no prebuilt binary
 to ship and nothing to install beyond a C toolchain.
 
 It runs in plain Dart on Linux, macOS and Windows, for servers, command-line
-tools and batch jobs. Flutter apps can use it too; CI runs one on Linux, an
+tools and batch jobs. Flutter apps can use it too. CI runs one on Linux, an
 Android emulator and an iOS simulator (see [Platforms](#platforms)). For WebP or
 HEIC output in a Flutter app, look at the
 [`flutter_image_compress`](https://pub.dev/packages/flutter_image_compress)
-plugin. It needs Flutter; its pub.dev page lists Android, iOS, macOS and web.
+plugin. It needs Flutter. Its pub.dev page lists Android, iOS, macOS and web.
 
 The pure-Dart [`image`](https://pub.dev/packages/image) package is the right
 choice when you need its wide manipulation and filter suite. `image_ffi` is
