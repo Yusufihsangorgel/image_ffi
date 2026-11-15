@@ -5,3 +5,6 @@ pubspec.lock
 *.dylib
 *.so
 *.dll
+
+# Written by example/image_ffi_example.dart.
+*.thumb.jpg

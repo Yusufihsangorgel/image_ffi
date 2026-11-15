@@ -21,6 +21,9 @@
 - The package resolves again in apps on Flutter 3.38 to 3.44. The
   `code_assets` constraint is now `>=1.2.1 <3.0.0`. Version 2 of `code_assets`
   needs a newer `meta` than those Flutter releases pin.
+- The package archive no longer contains `gradient.thumb.jpg`, the image that
+  `example/image_ffi_example.dart` writes when it runs. `.gitignore` now lists
+  `*.thumb.jpg`.
 
 ## 1.2.6
 
