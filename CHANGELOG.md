@@ -18,6 +18,9 @@
   calls for decode, resize and encode, not one native call.
 - Example code comment and `thumbnailJpeg` dartdoc say the same, and the async
   dartdocs note that they have no `applyOrientation` argument.
+- The package resolves again in apps on Flutter 3.38 to 3.44. The
+  `code_assets` constraint is now `>=1.2.1 <3.0.0`. Version 2 of `code_assets`
+  needs a newer `meta` than those Flutter releases pin.
 
 ## 1.2.6
 
