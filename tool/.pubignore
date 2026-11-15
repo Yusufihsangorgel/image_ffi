@@ -1,0 +1,3 @@
+# The CI helpers import flutter_test and integration_test, which the
+# package does not depend on.
+/ci/
