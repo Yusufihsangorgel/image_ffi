@@ -30,6 +30,9 @@
   one simulator, one emulator and macOS desktop is removed.
 - The comment above `platforms:` in the pubspec names the CI runs that back the
   five declared platforms.
+- Dev dependency bounds raised to `image` `^4.3.0`, `test` `^1.27.0` and
+  `frontend_server_client` `^4.0.0`. With the old bounds `dart pub downgrade`
+  resolved packages that do not compile. CI now tests the lowest versions.
 
 ## 1.2.6
 
