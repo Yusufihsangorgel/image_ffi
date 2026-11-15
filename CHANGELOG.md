@@ -27,7 +27,7 @@
 - README: the platforms section reports only what CI runs. A generated Flutter
   app decodes a PNG and makes a JPEG thumbnail on Linux, on Android emulators
   at API 24 and 36, and on an iOS simulator. The description of a manual run on
-  one simulator and one emulator is removed.
+  one simulator, one emulator and macOS desktop is removed.
 - The comment above `platforms:` in the pubspec names the CI runs that back the
   five declared platforms.
 

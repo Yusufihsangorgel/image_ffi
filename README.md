@@ -308,7 +308,7 @@ Dart 3.11.
 
 ## Platforms
 
-`pubspec.yaml` lists android, ios, linux, macos and windows. The Dart VM tests
+The pubspec lists android, ios, linux, macos and windows. The Dart VM tests
 run in CI on Ubuntu, macOS and Windows. A second workflow
 (`.github/workflows/flutter-compat.yaml`) builds a generated Flutter app on
 every stable line from 3.38 to 3.50. The app decodes a bundled PNG, checks its
