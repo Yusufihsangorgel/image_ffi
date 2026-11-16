@@ -17,26 +17,23 @@ plugin. It needs Flutter. Its pub.dev page lists Android, iOS, macOS and web.
 The pure-Dart [`image`](https://pub.dev/packages/image) package is the right
 choice when you need its wide manipulation and filter suite. `image_ffi` is
 narrower on purpose: it does decode, high-quality resize, JPEG/PNG encode and
-one-call thumbnails, and it runs those in native code. If your workload is
-"read an image, make a thumbnail, write it back", this is several times faster.
-For cropping, drawing, filters, format conversions and animation, use `image`.
-
-![The benchmark running: decode, resize and encode timings for this package
-against `package:image` on the same input](https://raw.githubusercontent.com/Yusufihsangorgel/image_ffi/main/doc/demo.gif)
+one-call thumbnails, and it runs those in native code. On the benchmark
+[below](#benchmark) that is a small gain on decode and no gain on resize.
+Speed is not the reason to choose it. For cropping, drawing, filters, format
+conversions and animation, use `image`.
 
 ## Why this instead of what you already have
 
 The alternative to weigh is the pure-Dart [`image`](https://pub.dev/packages/image)
 package. For decode, resize and PNG/JPEG encode both do the job. The choice
-comes down to speed, reach and how much else you need.
+comes down to reach, features and how much else you need.
 
 **Choose `image_ffi` when**
 
-- Resize is in your latency or throughput budget, on a server or in a batch job.
-  `bench/bench.dart` synthesizes a 2000x2000 PNG, decodes it, resizes the longer
-  side to 256 px and re-encodes, timing both libraries on the same bytes. The
-  last run on an Apple M-series laptop: decode 21.9 ms against 94.5, resize
-  4.8 ms against 44.0, and 27.3 ms against 141.7 for the whole pipeline. Run
+- You want decode, resize and encode in native code behind a small API, and you
+  will time your own images. `bench/bench.dart` times both libraries on one
+  synthetic 2000x2000 PNG. On that input decode is about 1.1x faster here and
+  resize is slower than `image` (see [Benchmark](#benchmark)). Run
   `dart run bench/bench.dart` and get your own numbers.
 - You thumbnail a whole folder. `thumbnailJpegBatch` and `thumbnailPngBatch`
   run the work off the calling isolate and cap how many isolates are live.
@@ -186,22 +183,31 @@ fine in isolation, which is why it survives in so much image code.
 ## Benchmark
 
 Decode a 2000x2000 PNG and downscale it to a 256px thumbnail, `image_ffi`
-against the pure-Dart `image` package doing the same work. Medians of 15 runs on
-an Apple M-series laptop:
+against the pure-Dart `image` package doing the same work. Each figure is the
+median of 15 runs after 3 warm-up runs. Measured on 2026-11-16 with Dart
+3.13.5, `image` 4.13.1 and an Apple M4 Pro (12 cores) on macOS 26.3. This is
+run 3 of 8 consecutive runs, started at a load average of 5.6. It is the only
+run where all three rows stayed in their fast range:
 
-![Benchmark: image_ffi vs the image package on decode, resize and the full pipeline](doc/benchmark.png)
+| Operation                     | image_ffi | image   | image_ffi vs image |
+| ----------------------------- | --------- | ------- | ------------------ |
+| decode PNG                    | 24.0 ms   | 27.6 ms | 1.1x faster        |
+| resize to 256px               | 5.0 ms    | 4.3 ms  | 0.9x, slower       |
+| decode + resize + JPEG encode | 29.9 ms   | 34.3 ms | 1.1x faster        |
 
-| Operation                     | image_ffi | image    | Speedup |
-| ----------------------------- | --------- | -------- | ------- |
-| decode PNG                    | 21.9 ms   | 94.5 ms  | 4.3x    |
-| resize to 256px               | 4.8 ms    | 44.0 ms  | 9.3x    |
-| decode + resize + JPEG encode | 27.3 ms   | 141.7 ms | 5.2x    |
+Across all 8 runs, with the load average between 5.1 and 6.9, decode came out
+between 1.1x and 1.4x faster and resize between 0.7x and 0.9x. That makes
+`image_ffi` slower on resize every time. The last row is not stable. In the
+other seven runs the `image` side of that row measured 133 to 294 ms, and in
+five of them the `image_ffi` side rose from 30 ms to between 86 and 161 ms. The
+ratio of that row ranged from 1.0x to 6.3x. Do not read a speed-up from it.
 
-The resize row uses cubic interpolation for the `image` package so both sides do
-a comparable high-quality filter. The `image` package's default nearest-neighbor
-resize is faster than either, at much lower quality. Measuring against that
-would not be like-for-like. Numbers are machine-dependent. Reproduce them
-with `dart run bench/bench.dart`.
+The input is a synthetic gradient that compresses to 16 KB, not a photograph,
+so decode timings on real files will differ. The resize row uses cubic
+interpolation for the `image` package so both sides do a comparable
+high-quality filter. The default nearest-neighbor resize of `image` is a lower
+quality filter and is not measured here. Numbers are machine-dependent.
+Reproduce them with `dart run bench/bench.dart`.
 
 ## API
 
@@ -279,7 +285,9 @@ stream while the rest keep going.
 
 ## How it works
 
-![Architecture: Dart API to FFI shim to native stb to pixels or an encoded image](doc/architecture.png)
+Bytes go in and pixels or a thumbnail come out. The Dart API calls a small FFI
+shim. The shim calls stb. It decodes the image, resizes it with a real filter
+and re-encodes it, all in native code.
 
 ## Shipping a standalone binary
 

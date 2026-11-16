@@ -1,5 +1,12 @@
 ## 1.2.7
 
+- The pubspec description and the README no longer say the package is several
+  times quicker than `package:image`. The earlier figures (4.3x decode, 9.3x
+  resize, 5.2x pipeline) did not reproduce. On 2026-11-16 `bench/bench.dart`
+  against `image` 4.13.1 measured 1.1x to 1.4x for decode and 0.7x to 0.9x for
+  resize, and the pipeline ratio varied from run to run. The README benchmark
+  table now carries the date, versions and machine, and the README and the
+  pubspec screenshot list no longer show the images that print the old figures.
 - README: the comparison section now says when `package:image` is the better
   choice (web, more formats and editing, no C toolchain) next to when this
   package is, and no longer lists an offline build as a reason to pick this
