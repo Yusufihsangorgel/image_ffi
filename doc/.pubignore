@@ -1,0 +1,9 @@
+# These images stay in git because the published 1.2.6 page loads them from
+# the repository. The README and the pubspec no longer use them, and the
+# package archive does not need them.
+/architecture.png
+/benchmark.png
+/demo.gif
+
+# No README or pubspec of any published version uses this diagram.
+/batch-concurrency.png

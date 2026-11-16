@@ -8,8 +8,9 @@
   down. The README benchmark table now gives these ranges with the date,
   versions and machine. The README and the pubspec screenshot list no longer
   show the images that print the old figures (`doc/benchmark.png`,
-  `doc/demo.gif` and `doc/architecture.png`). The SVG sources
-  `doc/benchmark.svg` and `doc/architecture.svg` are removed.
+  `doc/demo.gif` and `doc/architecture.png`). The package archive no longer
+  contains them. The SVG sources `doc/benchmark.svg` and
+  `doc/architecture.svg` are removed.
 - README: the comparison section now says when `package:image` is the better
   choice (web, more formats and editing, no C toolchain) next to when this
   package is, and no longer lists an offline build as a reason to pick this
@@ -34,6 +35,8 @@
 - The package archive no longer contains `gradient.thumb.jpg`, the image that
   `example/image_ffi_example.dart` writes when it runs. `.gitignore` now lists
   `*.thumb.jpg`.
+- The package archive no longer contains `doc/batch-concurrency.png`, a
+  diagram that no README or pubspec uses.
 - README: the platforms section reports only what CI runs. A generated Flutter
   app decodes a PNG and makes a JPEG thumbnail on Linux, on Android emulators
   at API 24 and 36, and on an iOS simulator. The description of a manual run on
