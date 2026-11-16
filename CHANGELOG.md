@@ -6,10 +6,10 @@
   against `image` 4.13.1 measured 1.1x to 1.2x for decode, 0.8x for resize and
   1.1x to 1.2x for the whole pipeline, in the rows where neither side slowed
   down. The README benchmark table now gives these ranges with the date,
-  versions and machine. The images that print the old figures
-  (`doc/benchmark.png`, `doc/demo.gif`, `doc/architecture.png` and their SVG
-  sources) are removed from the README, the pubspec screenshot list and the
-  package.
+  versions and machine. The README and the pubspec screenshot list no longer
+  show the images that print the old figures (`doc/benchmark.png`,
+  `doc/demo.gif` and `doc/architecture.png`). The SVG sources
+  `doc/benchmark.svg` and `doc/architecture.svg` are removed.
 - README: the comparison section now says when `package:image` is the better
   choice (web, more formats and editing, no C toolchain) next to when this
   package is, and no longer lists an offline build as a reason to pick this
