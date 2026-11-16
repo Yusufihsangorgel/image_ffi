@@ -32,7 +32,7 @@ comes down to reach, features and how much else you need.
 
 - You want decode, resize and encode in native code behind a small API, and you
   will time your own images. `bench/bench.dart` times both libraries on one
-  synthetic 2000x2000 PNG. On that input decode is about 1.1x faster here and
+  synthetic 2000x2000 PNG. On that input decode is 1.1x to 1.2x faster and
   resize is slower than `image` (see [Benchmark](#benchmark)). Run
   `dart run bench/bench.dart` and get your own numbers.
 - You thumbnail a whole folder. `thumbnailJpegBatch` and `thumbnailPngBatch`
@@ -183,24 +183,28 @@ fine in isolation, which is why it survives in so much image code.
 ## Benchmark
 
 Decode a 2000x2000 PNG and downscale it to a 256px thumbnail, `image_ffi`
-against the pure-Dart `image` package doing the same work. Each figure is the
-median of 15 runs after 3 warm-up runs. Measured on 2026-11-16 with Dart
-3.13.5, `image` 4.13.1 and an Apple M4 Pro (12 cores) on macOS 26.3. This is
-run 3 of 8 consecutive runs, started at a load average of 5.6. It is the only
-run where all three rows stayed in their fast range:
+against the pure-Dart `image` package doing the same work. Each run prints the
+median of 15 timings per row, after 3 warm-up timings. Measured in 8
+consecutive runs on 2026-11-16 with Dart 3.13.5, `image` 4.13.1 and an Apple
+M4 Pro (8 performance and 4 efficiency cores) on macOS 26.3, at a one-minute
+load average between 3.9 and 6.8.
 
-| Operation                     | image_ffi | image   | image_ffi vs image |
-| ----------------------------- | --------- | ------- | ------------------ |
-| decode PNG                    | 24.0 ms   | 27.6 ms | 1.1x faster        |
-| resize to 256px               | 5.0 ms    | 4.3 ms  | 0.9x, slower       |
-| decode + resize + JPEG encode | 29.9 ms   | 34.3 ms | 1.1x faster        |
+On this machine the timings of both libraries sometimes rose four- to
+seven-fold partway through a run. The table counts a row only when both of its
+sides ran at the normal speed. Each cell gives the lowest and the highest value
+over those rows:
 
-Across all 8 runs, with the load average between 5.1 and 6.9, decode came out
-between 1.1x and 1.4x faster and resize between 0.7x and 0.9x. That makes
-`image_ffi` slower on resize every time. The last row is not stable. In the
-other seven runs the `image` side of that row measured 133 to 294 ms, and in
-five of them the `image_ffi` side rose from 30 ms to between 86 and 161 ms. The
-ratio of that row ranged from 1.0x to 6.3x. Do not read a speed-up from it.
+| Operation                     | Rows   | image_ffi       | image           | image_ffi vs image  |
+| ----------------------------- | ------ | --------------- | --------------- | ------------------- |
+| decode PNG                    | 5 of 8 | 23.5 to 24.0 ms | 27.2 to 28.4 ms | 1.1x to 1.2x faster |
+| resize to 256px               | 4 of 8 | 5.0 to 5.3 ms   | 4.2 to 4.3 ms   | 0.8x, slower        |
+| decode + resize + JPEG encode | 3 of 8 | 29.5 to 30.3 ms | 33.7 to 35.3 ms | 1.1x to 1.2x faster |
+
+In the rows where both sides slowed down, decode came out 1.3x to 1.6x faster,
+resize 0.9x to 1.1x and the whole pipeline 1.2x to 1.6x. The benchmark times
+one library and then the other. A row where only one side slowed down gives a
+meaningless ratio: one such decode row printed 6.6x. Do not read a large
+speed-up from any of these runs.
 
 The input is a synthetic gradient that compresses to 16 KB, not a photograph,
 so decode timings on real files will differ. The resize row uses cubic
@@ -286,8 +290,8 @@ stream while the rest keep going.
 ## How it works
 
 Bytes go in and pixels or a thumbnail come out. The Dart API calls a small FFI
-shim. The shim calls stb. It decodes the image, resizes it with a real filter
-and re-encodes it, all in native code.
+shim. The shim calls stb: `stb_image` decodes the image, `stb_image_resize2`
+resizes it and `stb_image_write` encodes the result, all in native code.
 
 ## Shipping a standalone binary
 
